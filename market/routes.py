@@ -2,135 +2,232 @@ from http.client import HTTPResponse
 from xml.dom.expatbuilder import FragmentBuilder
 from flask import flash, redirect, render_template, request, url_for
 from pyparsing import nums
-from market import my_sql
-from market import app
+from market import app, db, bcrypt
 import random
 from datetime import datetime,date
-
 
 cart_id=0
 total_val=0
 total_count=0
 customer_cart_list=[]
 
+# SQLAlchemy Models 
+class Customer(db.Model):
+    __tablename__ = 'customer'
+    Customer_ID = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    email = db.Column(db.String(100), unique=True)
+    mobile_no = db.Column(db.String(20))
+    password = db.Column(db.String(80))
+
+class Admin(db.Model):
+    __tablename__ = 'admin'
+    Admin_ID = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    password = db.Column(db.String(80))
+
+class Seller(db.Model):
+    __tablename__ = 'seller'
+    Seller_ID = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    email = db.Column(db.String(100), unique=True)
+    phone_number = db.Column(db.String(20))
+    password = db.Column(db.String(80))
+    place_of_operation = db.Column(db.String(100))
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
+
+class Order(db.Model):
+    __tablename__ = 'orders'
+    Order_ID = db.Column(db.Integer, primary_key=True)
+    mode = db.Column(db.String(50))
+    amount = db.Column(db.Float)
+    date = db.Column(db.Date)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customer.Customer_ID'))
+
+class Offer(db.Model):
+    __tablename__ = 'offer'
+    Offer_ID = db.Column(db.Integer, primary_key=True)
+    promo_code = db.Column(db.String(50), unique=True)
+    percentage_discount = db.Column(db.Float)
+    min_order_value = db.Column(db.Float)
+    max_discount = db.Column(db.Float)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
+
+class DeliveryBoy(db.Model):
+    __tablename__ = 'delivery_boy'
+    Delivery_Boy_ID = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    mobile_no = db.Column(db.String(20))
+    email = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(80))
+    average_rating = db.Column(db.Float, default=None)
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
+
+class Product(db.Model):
+    __tablename__ = 'product'
+    Product_ID = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    price = db.Column(db.Float)
+    brand = db.Column(db.String(100))
+    measurement = db.Column(db.String(100))
+    category_id = db.Column(db.Integer)
+    unit = db.Column(db.String(50))
+    admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
+
+class Cart(db.Model):
+    __tablename__ = 'cart'
+    Cart_ID = db.Column(db.Integer, primary_key=True)
+    Total_Value = db.Column(db.Float)
+    Total_Count = db.Column(db.Integer)
+    Offer_ID = db.Column(db.Integer, db.ForeignKey('offer.Offer_ID'))
+    Final_Amount = db.Column(db.Float)
+
+class AssociatedWith(db.Model):
+    __tablename__ = 'associated_with'
+    id = db.Column(db.Integer, primary_key=True)
+    Customer_ID = db.Column(db.Integer, db.ForeignKey('customer.Customer_ID'))
+    Cart_ID = db.Column(db.Integer, db.ForeignKey('cart.Cart_ID'))
+    Product_ID = db.Column(db.Integer, db.ForeignKey('product.Product_ID'))
+
+class Sells(db.Model):
+    __tablename__ = 'sells'
+    id = db.Column(db.Integer, primary_key=True)
+    Seller_ID = db.Column(db.Integer, db.ForeignKey('seller.Seller_ID'))
+    Product_ID = db.Column(db.Integer, db.ForeignKey('product.Product_ID'))
+    No_of_Product_Sold = db.Column(db.Integer)
+
 @app.route('/admin/<admin_id>')
 def adminRedirect(admin_id):
-    return render_template('adminOption.html',admin_id=admin_id)
+    return render_template('adminOption.html', admin_id=admin_id)
 
-@app.route('/adminOrder/<admin_id>',methods=['GET', 'POST'])
+@app.route('/adminOrder/<admin_id>', methods=['GET', 'POST'])
 def adminViewOrder(admin_id):
-    my_list =[]
-    cur = my_sql.connection.cursor()
-    order_list = cur.execute("SELECT * FROM orders")
-    if order_list>0:
-        order_all = cur.fetchall()
-        for order in order_all:
-            temp_dict = {}
-            for index in range(11):
-                if(index==0):
-                    temp_dict['Order_ID']=order[0]
-                elif(index==1):
-                    temp_dict['Mode']=order[1]
-                elif(index==2):
-                    temp_dict['Amount']=order[2]
-                elif(index==9):
-                    temp_dict['Date']=order[9]
-            my_list.append(temp_dict)
-    if request.method=='POST':
-        return redirect('/admin/'+str(admin_id))
-    return render_template('viewOrder.html',list=my_list)
+    my_list = []
+    order_all = Order.query.all()
+    for order in order_all:
+        temp_dict = {
+            'Order_ID': order.id,
+            'Mode': order.mode,
+            'Amount': order.amount,
+            'Date': order.date
+        }
+        my_list.append(temp_dict)
+    if request.method == 'POST':
+        return redirect('/admin/' + str(admin_id))
+    return render_template('viewOrder.html', list=my_list)
 
-@app.route('/adminOffer/<admin_id>',methods=['GET', 'POST'])
+@app.route('/adminOffer/<admin_id>', methods=['GET', 'POST'])
 def adminAddOffer(admin_id):
-    if request.method=='POST':
+    if request.method == 'POST':
         offerDetails = request.form
-        PC = offerDetails['Promo_Code']
-        PD = offerDetails['Percentage_Discount']
-        min_orderval = offerDetails['Min_OrderValue']
+        promo_code = offerDetails['Promo_Code']
+        percentage_discount = offerDetails['Percentage_Discount']
+        min_order_value = offerDetails['Min_OrderValue']
         max_discount = offerDetails['Max_Discount']
-        cur = my_sql.connection.cursor()
-        cur.execute("INSERT INTO offer(Promo_Code,Percentage_Discount,Min_OrderValue,Max_Discount,admin_id) VALUES(%s, %s, %s, %s,%s)",(PC,PD,min_orderval,max_discount,admin_id))
-        flash('You have successfully added a Offer !')
-        my_sql.connection.commit()
-        cur.close()
-    return render_template('addOffer.html',admin_id=admin_id)
+        new_offer = Offer(
+            promo_code=promo_code,
+            percentage_discount=percentage_discount,
+            min_order_value=min_order_value,
+            max_discount=max_discount,
+            admin_id=admin_id
+        )
+        db.session.add(new_offer)
+        db.session.commit()
+        flash('You have successfully added an Offer!')
+    return render_template('addOffer.html', admin_id=admin_id)
 
-@app.route('/adminDelivery_boy/<admin_id>',methods=['GET', 'POST'])
+@app.route('/adminDelivery_boy/<admin_id>', methods=['GET', 'POST'])
 def adminAdd_Delivery_Boy(admin_id):
-    if request.method=='POST':
+    if request.method == 'POST':
         delivery_boy_Details = request.form
-        First_Name = delivery_boy_Details['First_Name']
-        Last_Name = delivery_boy_Details['Last_Name']
-        Mobile_No = delivery_boy_Details['Mobile_No']
-        Email = delivery_boy_Details['Email']
-        Password = delivery_boy_Details['Password']
-        cur = my_sql.connection.cursor()
-        cur.execute("INSERT INTO delivery_boy(First_Name,Last_Name,Mobile_No,Email,Password,Average_Rating,Admin_ID) VALUES(%s, %s, %s, %s, %s,%s,%s)",(First_Name,Last_Name,Mobile_No,Email,Password,None,admin_id))
-        flash('You have successfully added a delivery boy !')
-        my_sql.connection.commit()
-        cur.close()
-    return render_template('addDelivery.html',admin_id=admin_id)
+        first_name = delivery_boy_Details['First_Name']
+        last_name = delivery_boy_Details['Last_Name']
+        mobile_no = delivery_boy_Details['Mobile_No']
+        email = delivery_boy_Details['Email']
+        password = delivery_boy_Details['Password']
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_delivery_boy = DeliveryBoy(
+            first_name=first_name,
+            last_name=last_name,
+            mobile_no=mobile_no,
+            email=email,
+            password=hashed_password,
+            admin_id=admin_id
+        )
+        db.session.add(new_delivery_boy)
+        db.session.commit()
+        flash('You have successfully added a delivery boy!')
+    return render_template('addDelivery.html', admin_id=admin_id)
 
-@app.route('/adminSeller/<admin_id>',methods=['GET', 'POST'])
+@app.route('/adminSeller/<admin_id>', methods=['GET', 'POST'])
 def adminAdd_Seller(admin_id):
-    if request.method=='POST':
+    if request.method == 'POST':
         Seller_Details = request.form
-        First_Name = Seller_Details['First_Name']
-        Last_Name = Seller_Details['Last_Name']
-        Email = Seller_Details['Email']
-        Phone_Number = Seller_Details['Phone_Number']
-        Password = Seller_Details['Password']
-        Place_Of_Operation = Seller_Details['Place_Of_Operation']
-        cur = my_sql.connection.cursor()
-        cur.execute("INSERT INTO seller(First_Name,Last_Name,Email,Phone_Number,Password,Place_Of_Operation,Admin_ID) VALUES(%s, %s, %s, %s, %s,%s,%s)",(First_Name,Last_Name,Email,Phone_Number,Password,Place_Of_Operation,admin_id))
-        flash('You have successfully added a seller !')
-        my_sql.connection.commit()
-        cur.close()
-    return render_template('addSeller.html',admin_id=admin_id)
+        first_name = Seller_Details['First_Name']
+        last_name = Seller_Details['Last_Name']
+        email = Seller_Details['Email']
+        phone_number = Seller_Details['Phone_Number']
+        password = Seller_Details['Password']
+        place_of_operation = Seller_Details['Place_Of_Operation']
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_seller = Seller(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone_number=phone_number,
+            password=hashed_password,
+            place_of_operation=place_of_operation,
+            admin_id=admin_id
+        )
+        db.session.add(new_seller)
+        db.session.commit()
+        flash('You have successfully added a seller!')
+    return render_template('addSeller.html', admin_id=admin_id)
 
-@app.route('/adminProduct/<admin_id>',methods=['GET', 'POST'])
+@app.route('/adminProduct/<admin_id>', methods=['GET', 'POST'])
 def adminAdd_Product(admin_id):
-    if request.method=='POST':
+    if request.method == 'POST':
         Product_Details = request.form
-        Name = Product_Details['Name']
-        Price = Product_Details['Price']
-        Brand= Product_Details['Brand']
-        Measurement = Product_Details['Measurement']
-        Category_ID = Product_Details['Category_ID']
-        Unit = Product_Details['Unit']
-        cur = my_sql.connection.cursor()
-        cur.execute("INSERT INTO product(Name,Price,Brand,Measurement,Admin_ID,Category_ID,Unit) VALUES(%s, %s, %s, %s, %s,%s,%s)",(Name,Price,Brand,Measurement,admin_id,Category_ID,Unit))
-        flash('You have successfully added a Product !')
-        my_sql.connection.commit()
-        cur.close()
-    return render_template('addNewProducts.html',admin_id=admin_id)
+        name = Product_Details['Name']
+        price = Product_Details['Price']
+        brand = Product_Details['Brand']
+        measurement = Product_Details['Measurement']
+        category_id = Product_Details['Category_ID']
+        unit = Product_Details['Unit']
+        new_product = Product(
+            name=name,
+            price=price,
+            brand=brand,
+            measurement=measurement,
+            category_id=category_id,
+            unit=unit,
+            admin_id=admin_id
+        )
+        db.session.add(new_product)
+        db.session.commit()
+        flash('You have successfully added a Product!')
+    return render_template('addNewProducts.html')
 
-@app.route('/sell/<seller_id>',methods=['GET', 'POST'])
+@app.route('/sell/<seller_id>', methods=['GET', 'POST'])
 def sell(seller_id):
-    if request.method=='POST':
+    if request.method == 'POST':
         ProdDetail = request.form
-        Name = ProdDetail['Name']
-        Brand = ProdDetail['Brand']
-        Quantity = ProdDetail['Quantity']
-        cur = my_sql.connection.cursor()
-        prod_list = cur.execute("SELECT * FROM product")
-        if prod_list>0:
-            prod_all = cur.fetchall()
-            c_tup = ()
-            for tup in prod_all:
-                if(tup[1]==Name and tup[3]==Brand):
-                    c_tup = tup
-                    break
-            if c_tup==() or int(Quantity)<0:
-                flash('Invalid Product details or Quantity')
-            else:
-                cur.execute("INSERT INTO sells(Seller_ID,Product_ID,No_of_Product_Sold) VALUES(%s, %s, %s)",(seller_id,tup[0],Quantity))
-                my_sql.connection.commit()
-                cur.close()
-                flash('Product added successfully ')
+        name = ProdDetail['Name']
+        brand = ProdDetail['Brand']
+        quantity = ProdDetail['Quantity']
+        product = Product.query.filter_by(name=name, brand=brand).first()
+        if not product or int(quantity) < 0:
+            flash('Invalid Product details or Quantity')
+        else:
+            new_sale = Sells(Seller_ID=seller_id, Product_ID=product.Product_ID, No_of_Product_Sold=quantity)
+            db.session.add(new_sale)
+            db.session.commit()
+            flash('Product added successfully')
     return render_template('addProduct.html')
-
-
 
 def reinitialize():
     global cart_id
@@ -144,107 +241,64 @@ def reinitialize():
 
 @app.route('/home/<user_id>', methods=['GET', 'POST'])
 def userEnter(user_id):
-    my_list =[]
-    global cart_id
-    global total_count
-    global total_val
-    global customer_cart_list
-    cur = my_sql.connection.cursor()
-    product_list = cur.execute("SELECT * FROM product")
-    if product_list>0:
-        product_all = cur.fetchall()
-        for prod in product_all:
-            temp_dict = {}
-            for index in range(1,4):
-                if(index==1):
-                    temp_dict['Name']=prod[1]
-                elif(index==2):
-                    temp_dict['Price']=prod[2]
-                else:
-                    temp_dict['Brand']=prod[3]
-            my_list.append(temp_dict)
-    if request.method=='POST':
-        cur = my_sql.connection.cursor()
-        OID = 3
-        f_amt = total_val
-        cur.execute("INSERT INTO cart(Cart_ID,Total_Value,Total_Count,Offer_ID,Final_Amount) VALUES(%s, %s, %s, %s, %s)",(cart_id,total_val,total_count,OID,f_amt))
-        my_sql.connection.commit()
-        cur.close()
-        url_direct = '/order'+'/'+str(user_id)
-        return redirect(url_direct)
+    my_list = []
+    global cart_id, total_count, total_val, customer_cart_list
+    products = Product.query.all()
+    for prod in products:
+        temp_dict = {
+            'Name': prod.name,
+            'Price': prod.price,
+            'Brand': prod.brand
+        }
+        my_list.append(temp_dict)
+    if request.method == 'POST':
+        new_cart = Cart(Cart_ID=cart_id, Total_Value=total_val, Total_Count=total_count, Offer_ID=3, Final_Amount=total_val)
+        db.session.add(new_cart)
+        db.session.commit()
+        return redirect(url_for('placeOrder', user_id=user_id))
     else:
         purchaseDetails = request.args
         try:
-            Name = purchaseDetails['Name']
-            Brand = purchaseDetails['Brand']
-            Price = purchaseDetails['Price']
-            total_count=total_count+1
-            total_val=total_val+int(Price)
-            temp_dict = {}
-            temp_dict['Name']=Name
-            temp_dict['Brand']=Brand 
-            temp_dict['Price']=Price
+            name = purchaseDetails['Name']
+            brand = purchaseDetails['Brand']
+            price = purchaseDetails['Price']
+            total_count += 1
+            total_val += int(price)
+            temp_dict = {'Name': name, 'Brand': brand, 'Price': price}
             customer_cart_list.append(temp_dict)
-            flash('Product has been added successfully to the cart !')
+            flash('Product has been added successfully to the cart!')
         except KeyError:
-            tempError = "Error: KeyError"
-    return render_template('home.html',list=my_list)
+            flash("Error: KeyError")
+    return render_template('home.html', list=my_list)
 
-@app.route('/order/<user_id>',methods=['GET','POST'])
+@app.route('/order/<user_id>', methods=['GET', 'POST'])
 def placeOrder(user_id):
-    global customer_cart_list
-    global cart_id
-    global total_val 
-    if request.method=='POST':
+    global customer_cart_list, cart_id, total_val
+    if request.method == 'POST':
         OfferDetails = request.form
-        P_code = OfferDetails['Promo_Code']
-        cur = my_sql.connection.cursor()
-        if(P_code=='Coupon_Code'):
-            cur.execute("UPDATE cart SET Offer_ID = %s WHERE Cart_ID = %s",(None,cart_id))
-            my_sql.connection.commit()
-            cur.close()
+        p_code = OfferDetails['Promo_Code']
+        offer = Offer.query.filter_by(promo_code=p_code).first()
+        if not offer or p_code == 'Coupon_Code':
+            new_cart_offer = Cart.query.filter_by(Cart_ID=cart_id).first()
+            new_cart_offer.Offer_ID = None
+            db.session.commit()
         else:
-            offer_list = cur.execute("SELECT * FROM offer")
-            if offer_list>0:
-                offer_all = cur.fetchall()
-                deduct = 0
-                my_tup=()
-            for tup in offer_all:
-                if(tup[1]==P_code):
-                    my_tup=tup
-                    if(int(total_val)>int(tup[3])):
-                        dval = (int(total_val)*float(tup[2]))/100
-                        if(float(dval)>int(tup[4])):
-                            deduct=int(tup[4])
-                        else:
-                            deduct=dval
-                    break
-            if(deduct==0):
-                cur.execute("UPDATE cart SET Offer_ID = %s WHERE Cart_ID = %s",(None,cart_id))
-                my_sql.connection.commit()
-                cur.close()
-            else:
-                cur.execute("UPDATE cart SET Offer_ID = %s WHERE Cart_ID = %s",(my_tup[0],cart_id))
-                total_val=total_val-deduct
-                cur.execute("UPDATE cart SET Final_Amount = %s WHERE Cart_ID = %s",(total_val,cart_id))
-                my_sql.connection.commit()
-                cur.close()
+            if total_val > offer.min_order_value:
+                dval = (total_val * offer.percentage_discount) / 100
+                deduct = min(dval, offer.max_discount)
+                total_val -= deduct
+                new_cart_offer = Cart.query.filter_by(Cart_ID=cart_id).first()
+                new_cart_offer.Offer_ID = offer.Offer_ID
+                new_cart_offer.Final_Amount = total_val
+                db.session.commit()
         for item in customer_cart_list:
-            product_name = item['Name']
-            cur = my_sql.connection.cursor()
-            prod_list = cur.execute("SELECT * FROM product")
-            if prod_list>0:
-                prod_all = cur.fetchall()
-                id = -1
-            for tup in prod_all:
-                if(tup[1]==product_name):
-                    id = tup[0]
-                    break
-            cur.execute("INSERT INTO associated_with(Customer_ID,Cart_ID,Product_ID) VALUES(%s, %s, %s)",(user_id,cart_id,id))
-            my_sql.connection.commit()
-            cur.close()
-        return redirect('/placeOrder'+'/'+str(user_id))
-    return render_template('order.html',list=customer_cart_list)
+            product = Product.query.filter_by(name=item['Name']).first()
+            if product:
+                new_association = AssociatedWith(Customer_ID=user_id, Cart_ID=cart_id, Product_ID=product.Product_ID)
+                db.session.add(new_association)
+                db.session.commit()
+        return redirect(url_for('order_placing', user_id=user_id))
+    return render_template('order.html', list=customer_cart_list)
 
 @app.route('/HomePage')
 @app.route('/')
@@ -263,147 +317,161 @@ def loginRegisterUser():
 def loginRegisterAdmin():
     return render_template('loginregisterAdmin.html')
 
-@app.route('/placeOrder/<user_id>',methods=['GET','POST'])
+@app.route('/placeOrder/<user_id>', methods=['GET', 'POST'])
 def order_placing(user_id):
     global total_val
-    if request.method=='POST':
+    if request.method == 'POST':
         orderDetails = request.form
-        HNO = orderDetails['HNO']
-        City = orderDetails['City']
-        State = orderDetails['State']
-        Pincode = orderDetails['Pincode']
-        Mode = orderDetails['Mode']
+        hno = orderDetails['HNO']
+        city = orderDetails['City']
+        state = orderDetails['State']
+        pincode = orderDetails['Pincode']
+        mode = orderDetails['Mode']
         curr_date = date.today()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        cur = my_sql.connection.cursor()
-        rand_delivery_boy = cur.execute("SELECT Delivery_Boy_ID FROM delivery_boy")
-        if rand_delivery_boy >0:
-            rand_boy = cur.fetchall()
-            boy_key = random.choice(rand_boy)
-        cur.execute("INSERT INTO orders(Mode,Amount,City,State,Order_Time,House_Flat_No,Pincode,Cart_ID,Date,Delivery_Boy_ID) VALUES(%s, %s, %s, %s, %s,%s,%s,%s,%s,%s)",(Mode,total_val,City,State,current_time,HNO,Pincode,cart_id,curr_date,boy_key))
-        flash('Your Order has been placed Successfully !')
-        my_sql.connection.commit()
-        cur.close()
-    return render_template('orderDetails.html',total_val=total_val)
+        delivery_boy_ids = [boy.Delivery_Boy_ID for boy in DeliveryBoy.query.all()]
+        delivery_boy_id = random.choice(delivery_boy_ids) if delivery_boy_ids else None
+        new_order = Order(
+            mode=mode,
+            amount=total_val,
+            city=city,
+            state=state,
+            date=curr_date,
+            house_flat_no=hno,
+            pincode=pincode,
+            cart_id=cart_id,
+            delivery_boy_id=delivery_boy_id,
+            order_time=current_time
+        )
+        db.session.add(new_order)
+        db.session.commit()
+        flash('Your Order has been placed Successfully!')
+    return render_template('orderDetails.html', total_val=total_val)
 
-@app.route('/customerRegister',methods=['GET','POST'])
+@app.route('/customerRegister', methods=['GET', 'POST'])
 def customerRegister():
-    if request.method=='POST':
+    if request.method == 'POST':
         custDetails = request.form
-        First_Name = custDetails['First_Name']
-        Last_Name = custDetails['Last_Name']
-        Email = custDetails['Email']
-        Mobile_No = custDetails['Mobile_No']
-        Password = custDetails['Password']
-        cur = my_sql.connection.cursor()
-        cur.execute("INSERT INTO customer(First_Name,Last_Name,Email,Mobile_No,Password) VALUES(%s, %s, %s, %s, %s)",(First_Name,Last_Name,Email,Mobile_No,Password))
-        flash('You have registered successfully !')
-        my_sql.connection.commit()
-        cur.close()
+        first_name = custDetails['First_Name']
+        last_name = custDetails['Last_Name']
+        email = custDetails['Email']
+        mobile_no = custDetails['Mobile_No']
+        password = custDetails['Password']
+        # Hash the password
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        print(f"Hashed Password: {hashed_password}")  # Debugging
+        # Create a new customer
+        new_customer = Customer(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            mobile_no=mobile_no,
+            password=hashed_password
+        )
+        # Add the new customer to the session and commit to the database
+        db.session.add(new_customer)
+        db.session.commit()
+        flash('You have registered successfully!')
     return render_template('customerRegister.html')
 
-@app.route('/adminRegister',methods=['GET','POST'])
+@app.route('/adminRegister', methods=['GET', 'POST'])
 def adminRegister():
-    if request.method=='POST':
+    if request.method == 'POST':
         custDetails = request.form
-        First_Name = custDetails['First_Name']
-        Last_Name = custDetails['Last_Name']
-        Password = custDetails['Password']
-        cur = my_sql.connection.cursor()
-        cur.execute("INSERT INTO admin(First_Name,Last_Name,Admin_Password) VALUES(%s, %s, %s)",(First_Name,Last_Name,Password))
-        flash('You have registered successfully !')
-        my_sql.connection.commit()
-        cur.close()
+        first_name = custDetails['First_Name']
+        last_name = custDetails['Last_Name']
+        password = custDetails['Password']
+        # Hash the password
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        # Create a new admin
+        new_admin = Admin(
+            first_name=first_name,
+            last_name=last_name,
+            password=hashed_password
+        )
+        # Add the new admin to the session and commit to the database
+        db.session.add(new_admin)
+        db.session.commit()
+        flash('You have registered successfully!')
     return render_template('adminRegister.html')
 
-@app.route('/sellerRegister',methods=['GET','POST'])
+@app.route('/sellerRegister', methods=['GET', 'POST'])
 def sellerRegister():
-    if request.method=='POST':
+    if request.method == 'POST':
         sellerDetails = request.form
-        First_Name = sellerDetails['First_Name']
-        Last_Name = sellerDetails['Last_Name']
-        Email = sellerDetails['Email']
-        Password = sellerDetails['Password']
-        Mobile_No = sellerDetails['Phone_Number']
-        POO = sellerDetails['Place_Of_Operation']
-        cur = my_sql.connection.cursor()
-        rand_admin = cur.execute("SELECT Admin_ID FROM admin")
-        if rand_admin >0:
-            rand_ad = cur.fetchall()
-            F_key = random.choice(rand_ad)
-            cur.execute("INSERT INTO seller(First_Name,Last_Name,Email,Phone_Number,Password,Place_Of_Operation,Admin_ID) VALUES(%s, %s, %s,%s,%s,%s, %s)",(First_Name,Last_Name,Email,Mobile_No,Password,POO, F_key))
-            flash('You have registered successfully !')
-        my_sql.connection.commit()
-        cur.close()
+        first_name = sellerDetails['First_Name']
+        last_name = sellerDetails['Last_Name']
+        email = sellerDetails['Email']
+        password = sellerDetails['Password']
+        phone_number = sellerDetails['Phone_Number']
+        place_of_operation = sellerDetails['Place_Of_Operation']
+        # Hash the password
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        # Select a random admin ID
+        rand_admin = db.session.execute('SELECT id FROM admin').fetchall()
+        admin_id = random.choice(rand_admin)[0] if rand_admin else None
+        # Create a new seller
+        new_seller = Seller(
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            phone_number=phone_number,
+            password=hashed_password,
+            place_of_operation=place_of_operation,
+            admin_id=admin_id
+        )
+        # Add the new seller to the session and commit to the database
+        db.session.add(new_seller)
+        db.session.commit()
+        flash('You have registered successfully!')
     return render_template('sellerRegister.html')
-        
-@app.route('/UserLogin',methods=['GET','POST'])
+
+@app.route('/UserLogin', methods=['GET', 'POST'])
 def UserLogin():
-    if request.method=='POST':
+    if request.method == 'POST':
         userDetail = request.form
-        Email = userDetail['Email']
-        Password = userDetail['Password']
-        cur = my_sql.connection.cursor()
-        cust_list = cur.execute("SELECT * FROM customer")
-        if cust_list>0:
-            cust_all = cur.fetchall()
-            c_tup = ()
-            for tup in cust_all:
-                if(tup[3]==Email):
-                    c_tup = tup
-                    break
-            if c_tup==() or Password!=c_tup[5]:
-                flash('Invalid Email or Password')
-            else:
-                reinitialize()
-                url_direct = '/home'+'/'+str(c_tup[0])
-                return redirect(url_direct)
+        email = userDetail['Email']
+        password = userDetail['Password']
+        # Fetch the user by email
+        customer = Customer.query.filter_by(email=email).first()
+        if customer and bcrypt.check_password_hash(customer.password, password):
+            reinitialize()
+            url_direct = '/home/' + str(customer.Customer_ID)
+            return redirect(url_direct)
+        else:
+            flash('Invalid Email or Password')
     return render_template('UserLogin.html')
 
-@app.route('/AdminLogin',methods=['GET','POST'])
+@app.route('/AdminLogin', methods=['GET', 'POST'])
 def AdminLogin():
-    if request.method=='POST':
+    if request.method == 'POST':
         userDetail = request.form
-        First_Name = userDetail['First_Name']
-        Last_Name = userDetail['Last_Name']
-        Password = userDetail['Password']
-        cur = my_sql.connection.cursor()
-        cust_list = cur.execute("SELECT * FROM admin")
-        if cust_list>0:
-            cust_all = cur.fetchall()
-            c_tup = ()
-            for tup in cust_all:
-                if(tup[1]==First_Name and tup[2]==Last_Name):
-                    c_tup = tup
-                    break
-            if c_tup==() or Password!=c_tup[3]:
-                flash('Invalid Email or Password')
-            else:
-                url_direct = '/admin'+'/'+str(c_tup[0])
-                return redirect(url_direct)
+        first_name = userDetail['First_Name']
+        last_name = userDetail['Last_Name']
+        password = userDetail['Password']
+        # Fetch the admin by name
+        admin = Admin.query.filter_by(first_name=first_name, last_name=last_name).first()
+        if admin and bcrypt.check_password_hash(admin.password, password):
+            url_direct = '/admin/' + str(admin.Admin_ID)
+            return redirect(url_direct)
+        else:
+            flash('Invalid Name or Password')
     return render_template('AdminLogin.html')
 
-@app.route('/SellerLogin',methods=['GET','POST'])
+@app.route('/SellerLogin', methods=['GET', 'POST'])
 def SellerLogin():
-    if request.method=='POST':
+    if request.method == 'POST':
         userDetail = request.form
-        Email = userDetail['Email']
-        Password = userDetail['Password']
-        cur = my_sql.connection.cursor()
-        cust_list = cur.execute("SELECT * FROM seller")
-        if cust_list>0:
-            cust_all = cur.fetchall()
-            c_tup = ()
-            for tup in cust_all:
-                if(tup[3]==Email):
-                    c_tup = tup
-                    break
-            if c_tup==() or Password!=c_tup[5]:
-                flash('Invalid Email or Password')
-            else:
-                url_direct = '/sell'+'/'+str(c_tup[0])
-                return redirect(url_direct)
+        email = userDetail['Email']
+        password = userDetail['Password']
+        # Fetch the seller by email
+        seller = Seller.query.filter_by(email=email).first()
+        if seller and bcrypt.check_password_hash(seller.password, password):
+            url_direct = '/sell/' + str(seller.Seller_ID)
+            return redirect(url_direct)
+        else:
+            flash('Invalid Email or Password')
     return render_template('SellerLogin.html')
 
 class StaticClass:
