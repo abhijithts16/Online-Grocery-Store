@@ -6,6 +6,8 @@ from market import app, db, bcrypt
 import random
 from datetime import datetime,date
 from functools import wraps
+from markupsafe import escape
+from market.forms import CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm
 
 cart_id=0
 total_val=0
@@ -373,16 +375,15 @@ def order_placing(user_id):
 
 @app.route('/customerRegister', methods=['GET', 'POST'])
 def customerRegister():
-    if request.method == 'POST':
-        custDetails = request.form
-        first_name = custDetails['First_Name']
-        last_name = custDetails['Last_Name']
-        email = custDetails['Email']
-        mobile_no = custDetails['Mobile_No']
-        password = custDetails['Password']
+    form = CustomerRegistrationForm()
+    if form.validate_on_submit():
+        first_name = escape(form.first_name.data)
+        last_name = escape(form.last_name.data)
+        email = escape(form.email.data)
+        mobile_no = escape(form.mobile_no.data)
+        password = form.password.data
         # Hash the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        print(f"Hashed Password: {hashed_password}")  # Debugging
         # Create a new customer
         new_customer = Customer(
             first_name=first_name,
@@ -395,15 +396,16 @@ def customerRegister():
         db.session.add(new_customer)
         db.session.commit()
         flash('You have registered successfully!')
-    return render_template('customerRegister.html')
+        return redirect(url_for('UserLogin'))
+    return render_template('customerRegister.html', form=form)
 
 @app.route('/adminRegister', methods=['GET', 'POST'])
 def adminRegister():
-    if request.method == 'POST':
-        custDetails = request.form
-        first_name = custDetails['First_Name']
-        last_name = custDetails['Last_Name']
-        password = custDetails['Password']
+    form = AdminRegistrationForm()
+    if form.validate_on_submit():
+        first_name = escape(form.first_name.data)
+        last_name = escape(form.last_name.data)
+        password = form.password.data
         # Hash the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         # Create a new admin
@@ -416,22 +418,23 @@ def adminRegister():
         db.session.add(new_admin)
         db.session.commit()
         flash('You have registered successfully!')
-    return render_template('adminRegister.html')
+        return redirect(url_for('AdminLogin'))
+    return render_template('adminRegister.html', form=form)
 
 @app.route('/sellerRegister', methods=['GET', 'POST'])
 def sellerRegister():
-    if request.method == 'POST':
-        sellerDetails = request.form
-        first_name = sellerDetails['First_Name']
-        last_name = sellerDetails['Last_Name']
-        email = sellerDetails['Email']
-        password = sellerDetails['Password']
-        phone_number = sellerDetails['Phone_Number']
-        place_of_operation = sellerDetails['Place_Of_Operation']
+    form = SellerRegistrationForm()
+    if form.validate_on_submit():
+        first_name = escape(form.first_name.data)
+        last_name = escape(form.last_name.data)
+        email = escape(form.email.data)
+        password = form.password.data
+        phone_number = escape(form.phone_number.data)
+        place_of_operation = escape(form.place_of_operation.data)
         # Hash the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         # Select a random admin ID
-        rand_admin = db.session.execute('SELECT id FROM admin').fetchall()
+        rand_admin = db.session.execute('SELECT Admin_ID FROM admin').fetchall()
         admin_id = random.choice(rand_admin)[0] if rand_admin else None
         # Create a new seller
         new_seller = Seller(
@@ -447,63 +450,66 @@ def sellerRegister():
         db.session.add(new_seller)
         db.session.commit()
         flash('You have registered successfully!')
-    return render_template('sellerRegister.html')
+        return redirect(url_for('SellerLogin'))
+    return render_template('sellerRegister.html', form=form)
 
 @app.route('/UserLogin', methods=['GET', 'POST'])
 def UserLogin():
-    if request.method == 'POST':
-        userDetail = request.form
-        email = userDetail['Email']
-        password = userDetail['Password']
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = escape(form.email.data)
+        password = form.password.data
         # Fetch the user by email
         customer = Customer.query.filter_by(email=email).first()
         if customer and bcrypt.check_password_hash(customer.password, password):
-            session['user_id'] = customer.Customer_ID 
-            session['user_type'] = 'customer' 
+            session['user_id'] = customer.Customer_ID
+            session['user_type'] = 'customer'
             session.permanent = True
             reinitialize()
             url_direct = '/home/' + str(customer.Customer_ID)
             return redirect(url_direct)
         else:
             flash('Invalid Email or Password')
-    return render_template('UserLogin.html')
+    return render_template('UserLogin.html', form=form)
+
+from market.forms import CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm, AdminLoginForm
 
 @app.route('/AdminLogin', methods=['GET', 'POST'])
 def AdminLogin():
-    if request.method == 'POST':
-        userDetail = request.form
-        first_name = userDetail['First_Name']
-        last_name = userDetail['Last_Name']
-        password = userDetail['Password']
+    form = AdminLoginForm()
+    if form.validate_on_submit():
+        first_name = escape(form.first_name.data)
+        last_name = escape(form.last_name.data)
+        password = form.password.data
         # Fetch the admin by name
         admin = Admin.query.filter_by(first_name=first_name, last_name=last_name).first()
         if admin and bcrypt.check_password_hash(admin.password, password):
-            session['user_id'] = admin.Admin_ID 
-            session['user_type'] = 'admin' 
+            session['user_id'] = admin.Admin_ID
+            session['user_type'] = 'admin'
             session.permanent = True
             url_direct = '/admin/' + str(admin.Admin_ID)
             return redirect(url_direct)
         else:
             flash('Invalid Name or Password')
-    return render_template('AdminLogin.html')
+    return render_template('AdminLogin.html', form=form)
 
 @app.route('/SellerLogin', methods=['GET', 'POST'])
 def SellerLogin():
-    if request.method == 'POST':
-        userDetail = request.form
-        email = userDetail['Email']
-        password = userDetail['Password']
+    form = LoginForm()
+    if form.validate_on_submit():
+        email = escape(form.email.data)
+        password = form.password.data
         # Fetch the seller by email
         seller = Seller.query.filter_by(email=email).first()
         if seller and bcrypt.check_password_hash(seller.password, password):
-            session['user_id'] = seller.Seller_ID 
-            session['user_type'] = 'seller' 
+            session['user_id'] = seller.Seller_ID
+            session['user_type'] = 'seller'
             session.permanent = True
             url_direct = '/sell/' + str(seller.Seller_ID)
             return redirect(url_direct)
         else:
             flash('Invalid Email or Password')
-    return render_template('SellerLogin.html')
+    return render_template('SellerLogin.html', form=form)
 
 class StaticClass:
     
