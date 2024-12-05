@@ -14,16 +14,31 @@ total_val=0
 total_count=0
 customer_cart_list=[]
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
-            return render_template('homepage.html')
-        if 'user_id' in kwargs and session['user_id'] != int(kwargs['user_id']):
-            flash('Unauthorized access. Please login to continue!')
-            return render_template('homepage.html')
-        return f(*args, **kwargs)
-    return decorated_function
+
+def auth_required(role=None):
+    def wrapper(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            # Check if the user is logged in
+            if 'user_id' not in session:
+                flash('You need to log in first.')
+                return render_template('homepage.html')
+
+            # Check the user's role
+            if role and session.get('user_type') != role:
+                flash('You do not have permission to access this page.')
+                return render_template('homepage.html')
+
+            # Check if the user_id in session matches any of the expected IDs in kwargs
+            if ('user_id' in kwargs and session['user_id'] != int(kwargs['user_id'])) or \
+               ('seller_id' in kwargs and session['user_id'] != int(kwargs['seller_id'])) or \
+               ('admin_id' in kwargs and session['user_id'] != int(kwargs['admin_id'])):
+                flash('Unauthorized access. Please log in to continue!')
+                return render_template('homepage.html')
+
+            return f(*args, **kwargs)
+        return decorated_function
+    return wrapper
 
 # SQLAlchemy Models 
 class Customer(db.Model):
@@ -115,12 +130,12 @@ class Sells(db.Model):
     No_of_Product_Sold = db.Column(db.Integer)
 
 @app.route('/admin/<admin_id>')
-@login_required
+@auth_required('admin')
 def adminRedirect(admin_id):
     return render_template('adminOption.html', admin_id=admin_id)
 
 @app.route('/adminOrder/<admin_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('admin')
 def adminViewOrder(admin_id):
     my_list = []
     order_all = Order.query.all()
@@ -137,7 +152,7 @@ def adminViewOrder(admin_id):
     return render_template('viewOrder.html', list=my_list)
 
 @app.route('/adminOffer/<admin_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('admin')
 def adminAddOffer(admin_id):
     if request.method == 'POST':
         offerDetails = request.form
@@ -158,7 +173,7 @@ def adminAddOffer(admin_id):
     return render_template('addOffer.html', admin_id=admin_id)
 
 @app.route('/adminDelivery_boy/<admin_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('admin')
 def adminAdd_Delivery_Boy(admin_id):
     if request.method == 'POST':
         delivery_boy_Details = request.form
@@ -182,7 +197,7 @@ def adminAdd_Delivery_Boy(admin_id):
     return render_template('addDelivery.html', admin_id=admin_id)
 
 @app.route('/adminSeller/<admin_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('admin')
 def adminAdd_Seller(admin_id):
     if request.method == 'POST':
         Seller_Details = request.form
@@ -208,7 +223,7 @@ def adminAdd_Seller(admin_id):
     return render_template('addSeller.html', admin_id=admin_id)
 
 @app.route('/adminProduct/<admin_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('admin')
 def adminAdd_Product(admin_id):
     if request.method == 'POST':
         Product_Details = request.form
@@ -233,7 +248,7 @@ def adminAdd_Product(admin_id):
     return render_template('addNewProducts.html')
 
 @app.route('/sell/<seller_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('seller')
 def sell(seller_id):
     if request.method == 'POST':
         ProdDetail = request.form
@@ -261,7 +276,7 @@ def reinitialize():
     customer_cart_list=[]
 
 @app.route('/home/<user_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('customer')
 def userEnter(user_id):
     my_list = []
     global cart_id, total_count, total_val, customer_cart_list
@@ -294,7 +309,7 @@ def userEnter(user_id):
     return render_template('home.html', list=my_list)
 
 @app.route('/order/<user_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('customer')
 def placeOrder(user_id):
     global customer_cart_list, cart_id, total_val
     if request.method == 'POST':
@@ -341,7 +356,7 @@ def loginRegisterAdmin():
     return render_template('loginregisterAdmin.html')
 
 @app.route('/placeOrder/<user_id>', methods=['GET', 'POST'])
-@login_required
+@auth_required('customer')
 def order_placing(user_id):
     global total_val
     if request.method == 'POST':
