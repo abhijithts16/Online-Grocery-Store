@@ -1,7 +1,8 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp
+from wtforms import DecimalField, IntegerField, StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp, NumberRange
 import re
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 
 # Custom validator for password complexity
 def validate_password(form, field):
@@ -53,3 +54,13 @@ class AdminLoginForm(FlaskForm):
     last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=50)])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
+
+class AddProductForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired(), Length(min=1, max=100)])
+    price = DecimalField('Price', validators=[DataRequired(), NumberRange(min=0)])
+    brand = StringField('Brand', validators=[DataRequired(), Length(min=1, max=100)])
+    measurement = StringField('Measurement', validators=[DataRequired(), Length(min=1, max=100)])
+    category_id = IntegerField('Category ID', validators=[DataRequired()])
+    unit = StringField('Unit', validators=[DataRequired(), Length(min=1, max=100)])
+    image = FileField('Product Image', validators=[FileAllowed(['jpg', 'png'], 'Images only!'), FileRequired()])
+    submit = SubmitField('Add Product')

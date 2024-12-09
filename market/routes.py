@@ -1,4 +1,5 @@
 from http.client import HTTPResponse
+import os
 from xml.dom.expatbuilder import FragmentBuilder
 from flask import flash, redirect, render_template, request, url_for, session
 from pyparsing import nums
@@ -7,12 +8,16 @@ import random
 from datetime import datetime,date
 from functools import wraps
 from markupsafe import escape
-from market.forms import CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm
+from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm
+from werkzeug.utils import secure_filename
 
 cart_id=0
 total_val=0
 total_count=0
 customer_cart_list=[]
+
+UPLOAD_FOLDER = 'market/static/uploads' 
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 def auth_required(role=None):
@@ -106,6 +111,7 @@ class Product(db.Model):
     category_id = db.Column(db.Integer)
     unit = db.Column(db.String(50))
     admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
+    image = db.Column(db.String(120))
 
 class Cart(db.Model):
     __tablename__ = 'cart'
@@ -225,27 +231,35 @@ def adminAdd_Seller(admin_id):
 @app.route('/adminProduct/<admin_id>', methods=['GET', 'POST'])
 @auth_required('admin')
 def adminAdd_Product(admin_id):
-    if request.method == 'POST':
-        Product_Details = request.form
-        name = Product_Details['Name']
-        price = Product_Details['Price']
-        brand = Product_Details['Brand']
-        measurement = Product_Details['Measurement']
-        category_id = Product_Details['Category_ID']
-        unit = Product_Details['Unit']
+    form = AddProductForm()
+    if form.validate_on_submit():
+
+        # Save the uploaded image 
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'])
+        image_file = form.image.data 
+        filename = secure_filename(image_file.filename) 
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename) 
+        image_file.save(image_path)
+        
+        # Create a new product object
         new_product = Product(
-            name=name,
-            price=price,
-            brand=brand,
-            measurement=measurement,
-            category_id=category_id,
-            unit=unit,
-            admin_id=admin_id
+        name=form.name.data,
+        price=form.price.data,
+        brand=form.brand.data,
+        measurement=form.measurement.data,
+        category_id=form.category_id.data,
+        unit=form.unit.data,
+        admin_id=admin_id,
+        image=filename
         )
+            
+        # Add to the session and commit to the database
         db.session.add(new_product)
         db.session.commit()
-        flash('You have successfully added a Product!')
-    return render_template('addNewProducts.html')
+        flash('You have successfully added a Product!', 'success')
+        return redirect(url_for('adminAdd_Product', admin_id=admin_id))
+    return render_template('addNewProducts.html', admin_id=admin_id, form=form)
 
 @app.route('/sell/<seller_id>', methods=['GET', 'POST'])
 @auth_required('seller')
@@ -285,7 +299,8 @@ def userEnter(user_id):
         temp_dict = {
             'Name': prod.name,
             'Price': prod.price,
-            'Brand': prod.brand
+            'Brand': prod.brand,
+            'Image': prod.image or 'default.png'  # Use 'default.png' if no image is uploaded
         }
         my_list.append(temp_dict)
     if request.method == 'POST':
@@ -307,6 +322,7 @@ def userEnter(user_id):
         except KeyError:
             flash("Error: KeyError")
     return render_template('home.html', list=my_list)
+
 
 @app.route('/order/<user_id>', methods=['GET', 'POST'])
 @auth_required('customer')
