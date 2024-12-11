@@ -17,6 +17,10 @@
           <h5 class="card-title text-primary">Name: {{ dict.Name }}</h5>
           <h5 class="card-title text-success">Brand: {{ dict.Brand }}</h5>
           <h5 class="card-title text-danger">Price: RS {{ dict.Price }}</h5>
+          <form method="POST" action="{{ url_for('remove_from_cart', user_id=user_id, item_name=dict.Name) }}">
+            {{ form.hidden_tag() }}  <!-- Ensure CSRF token is included here -->
+            <button type="submit" class="btn btn-danger">Remove</button>
+          </form>
         </div>
       </div>
     </div>

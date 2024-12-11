@@ -10,16 +10,40 @@
       {{ form.hidden_tag() }}  <!-- CSRF token added here -->
       <h1 class="text-center">Enter Product Details</h1>
       <div class="form-group" style="padding-top: 10px;">
-        <input class="form-control" id="exampleInputEmail1" placeholder="Product Name" name="Name">
+        {{ form.name.label }}
+        {{ form.name(class="form-control", placeholder="Product Name") }}
+        {% if form.name.errors %}
+          <div class="text-danger">
+            {% for error in form.name.errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
       <div class="form-group">
-        <input class="form-control" id="exampleInputPassword1" placeholder="Brand" name="Brand">
+        {{ form.brand.label }}
+        {{ form.brand(class="form-control", placeholder="Brand") }}
+        {% if form.brand.errors %}
+          <div class="text-danger">
+            {% for error in form.brand.errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
       <div class="form-group">
-        <input class="form-control" id="exampleInputPassword1" placeholder="Quantity to Add" name="Quantity">
+        {{ form.quantity.label }}
+        {{ form.quantity(class="form-control", placeholder="Quantity to Add") }}
+        {% if form.quantity.errors %}
+          <div class="text-danger">
+            {% for error in form.quantity.errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
       </div>
       <div class="text-center">
-        <button type="submit" class="btn btn-primary">Submit</button>
+        {{ form.submit(class="btn btn-primary") }}
       </div>
     </form>
   </div>

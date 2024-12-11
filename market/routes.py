@@ -8,8 +8,9 @@ import random
 from datetime import datetime,date
 from functools import wraps
 from markupsafe import escape
-from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, OrderForm, SellerRegistrationForm, LoginForm, PromoOfferForm, PromoCodeForm
+from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, DeliveryBoyForm, OrderForm, SellerProductForm, SellerRegistrationForm, LoginForm, PromoOfferForm, PromoCodeForm
 from werkzeug.utils import secure_filename
+from .models import Customer, Admin, Seller, Order, Offer, DeliveryBoy, Product, Cart, AssociatedWith, Sells
 
 cart_id=0
 total_val=0.0
@@ -45,103 +46,6 @@ def auth_required(role=None):
         return decorated_function
     return wrapper
 
-# SQLAlchemy Models 
-class Customer(db.Model):
-    __tablename__ = 'customer'
-    Customer_ID = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    email = db.Column(db.String(100), unique=True)
-    mobile_no = db.Column(db.String(20))
-    password = db.Column(db.String(80))
-
-class Admin(db.Model):
-    __tablename__ = 'admin'
-    Admin_ID = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    password = db.Column(db.String(80))
-
-class Seller(db.Model):
-    __tablename__ = 'seller'
-    Seller_ID = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    email = db.Column(db.String(100), unique=True)
-    phone_number = db.Column(db.String(20))
-    password = db.Column(db.String(80))
-    place_of_operation = db.Column(db.String(100))
-    admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
-
-class Order(db.Model):
-    __tablename__ = 'orders'
-    order_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    mode = db.Column(db.String(10), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    city = db.Column(db.String(50), nullable=False)
-    state = db.Column(db.String(50), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    house_flat_no = db.Column(db.String(10), nullable=False)
-    pincode = db.Column(db.String(6), nullable=False)
-    cart_id = db.Column(db.Integer, db.ForeignKey('cart.Cart_ID'), nullable=False)
-    delivery_boy_id = db.Column(db.Integer, db.ForeignKey('delivery_boy.Delivery_Boy_ID'), nullable=True)
-    order_time = db.Column(db.Time, nullable=False)
-
-
-class Offer(db.Model):
-    __tablename__ = 'offer'
-    Offer_ID = db.Column(db.Integer, primary_key=True)
-    promo_code = db.Column(db.String(50), unique=True)
-    percentage_discount = db.Column(db.Float)
-    min_ordervalue = db.Column(db.Float)
-    max_discount = db.Column(db.Float)
-    admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
-
-class DeliveryBoy(db.Model):
-    __tablename__ = 'delivery_boy'
-    Delivery_Boy_ID = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(50))
-    last_name = db.Column(db.String(50))
-    mobile_no = db.Column(db.String(20))
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(80))
-    average_rating = db.Column(db.Float, default=None)
-    admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
-
-class Product(db.Model):
-    __tablename__ = 'product'
-    Product_ID = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    price = db.Column(db.Float)
-    brand = db.Column(db.String(100))
-    measurement = db.Column(db.String(100))
-    category_id = db.Column(db.Integer)
-    unit = db.Column(db.String(50))
-    admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
-    image = db.Column(db.String(120))
-
-class Cart(db.Model):
-    __tablename__ = 'cart'
-    Cart_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    Total_Value = db.Column(db.Float, nullable=False)
-    Total_Count = db.Column(db.Integer, nullable=False)
-    Offer_ID = db.Column(db.Integer, nullable=True)
-    Final_Amount = db.Column(db.Float, nullable=False)
-
-class AssociatedWith(db.Model):
-    __tablename__ = 'associated_with'
-    id = db.Column(db.Integer, primary_key=True)
-    Customer_ID = db.Column(db.Integer, db.ForeignKey('customer.Customer_ID'))
-    Cart_ID = db.Column(db.Integer, db.ForeignKey('cart.Cart_ID'))
-    Product_ID = db.Column(db.Integer, db.ForeignKey('product.Product_ID'))
-
-class Sells(db.Model):
-    __tablename__ = 'sells'
-    id = db.Column(db.Integer, primary_key=True)
-    Seller_ID = db.Column(db.Integer, db.ForeignKey('seller.Seller_ID'))
-    Product_ID = db.Column(db.Integer, db.ForeignKey('product.Product_ID'))
-    No_of_Product_Sold = db.Column(db.Integer)
-
 @app.route('/admin/<admin_id>')
 @auth_required('admin')
 def adminRedirect(admin_id):
@@ -154,7 +58,7 @@ def adminViewOrder(admin_id):
     order_all = Order.query.all()
     for order in order_all:
         temp_dict = {
-            'Order_ID': order.Order_ID,
+            'Order_ID': order.order_id,
             'Mode': order.mode,
             'Amount': order.amount,
             'Date': order.date
@@ -189,13 +93,13 @@ def adminAddOffer(admin_id):
 @app.route('/adminDelivery_boy/<admin_id>', methods=['GET', 'POST'])
 @auth_required('admin')
 def adminAdd_Delivery_Boy(admin_id):
-    if request.method == 'POST':
-        delivery_boy_Details = request.form
-        first_name = delivery_boy_Details['First_Name']
-        last_name = delivery_boy_Details['Last_Name']
-        mobile_no = delivery_boy_Details['Mobile_No']
-        email = delivery_boy_Details['Email']
-        password = delivery_boy_Details['Password']
+    form = DeliveryBoyForm()
+    if form.validate_on_submit():
+        first_name = form.first_name.data
+        last_name = form.last_name.data
+        mobile_no = form.mobile_no.data
+        email = form.email.data
+        password = form.password.data
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_delivery_boy = DeliveryBoy(
             first_name=first_name,
@@ -208,19 +112,20 @@ def adminAdd_Delivery_Boy(admin_id):
         db.session.add(new_delivery_boy)
         db.session.commit()
         flash('You have successfully added a delivery boy!')
-    return render_template('addDelivery.html', admin_id=admin_id)
+        return redirect(url_for('adminAdd_Delivery_Boy', admin_id=admin_id))
+    return render_template('addDelivery.html', form=form, admin_id=admin_id)
 
 @app.route('/adminSeller/<admin_id>', methods=['GET', 'POST'])
 @auth_required('admin')
 def adminAdd_Seller(admin_id):
-    if request.method == 'POST':
-        Seller_Details = request.form
-        first_name = Seller_Details['First_Name']
-        last_name = Seller_Details['Last_Name']
-        email = Seller_Details['Email']
-        phone_number = Seller_Details['Phone_Number']
-        password = Seller_Details['Password']
-        place_of_operation = Seller_Details['Place_Of_Operation']
+    form = SellerRegistrationForm()
+    if form.validate_on_submit():
+        first_name = form.first_name.data
+        last_name = form.last_name.data
+        email = form.email.data
+        phone_number = form.phone_number.data
+        password = form.password.data
+        place_of_operation = form.place_of_operation.data
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_seller = Seller(
             first_name=first_name,
@@ -234,7 +139,8 @@ def adminAdd_Seller(admin_id):
         db.session.add(new_seller)
         db.session.commit()
         flash('You have successfully added a seller!')
-    return render_template('addSeller.html', admin_id=admin_id)
+        return redirect(url_for('adminAdd_Seller', admin_id=admin_id))
+    return render_template('addSeller.html', admin_id=admin_id, form=form)
 
 @app.route('/adminProduct/<admin_id>', methods=['GET', 'POST'])
 @auth_required('admin')
@@ -272,20 +178,21 @@ def adminAdd_Product(admin_id):
 @app.route('/sell/<seller_id>', methods=['GET', 'POST'])
 @auth_required('seller')
 def sell(seller_id):
-    if request.method == 'POST':
-        ProdDetail = request.form
-        name = ProdDetail['Name']
-        brand = ProdDetail['Brand']
-        quantity = ProdDetail['Quantity']
+    form = SellerProductForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        brand = form.brand.data
+        quantity = form.quantity.data
         product = Product.query.filter_by(name=name, brand=brand).first()
-        if not product or int(quantity) < 0:
+        if not product or quantity < 0:
             flash('Invalid Product details or Quantity')
         else:
             new_sale = Sells(Seller_ID=seller_id, Product_ID=product.Product_ID, No_of_Product_Sold=quantity)
             db.session.add(new_sale)
             db.session.commit()
             flash('Product added successfully')
-    return render_template('addProduct.html')
+        return redirect(url_for('sell', seller_id=seller_id))
+    return render_template('addProduct.html', form=form)
 
 def reinitialize():
     global cart_id
@@ -334,11 +241,34 @@ def userEnter(user_id):
     return render_template('home.html', list=my_list)
 
 
+@app.route('/remove_from_cart/<int:user_id>/<item_name>', methods=['POST'])
+@auth_required('customer')
+def remove_from_cart(user_id, item_name):
+    global customer_cart_list, total_val, cart_id
+
+    # Remove item from global cart list
+    for item in customer_cart_list:
+        if item['Name'] == item_name:
+            total_val -= float(item['Price'])
+            customer_cart_list.remove(item)
+            break
+
+    # Update the cart in the database
+    cart = Cart.query.filter_by(Cart_ID=cart_id).first()
+    if cart:
+        cart.Total_Value = total_val
+        cart.Total_Count = len(customer_cart_list)
+        cart.Final_Amount = total_val  # Assuming Final_Amount equals Total_Value without discount
+        db.session.commit()
+
+    flash(f'{item_name} has been removed from your cart.')
+    return redirect(url_for('placeOrder', user_id=user_id))
+
 @app.route('/order/<user_id>', methods=['GET', 'POST'])
 @auth_required('customer')
 def placeOrder(user_id):
     global customer_cart_list, cart_id, total_val
-    form = PromoCodeForm()  # Create an instance of the form
+    form = PromoCodeForm()
     if form.validate_on_submit():
         p_code = form.promo_code.data
         offer = Offer.query.filter_by(promo_code=p_code).first()
@@ -372,7 +302,7 @@ def placeOrder(user_id):
             item['Image'] = image_path
         else:
             item['Image'] = 'uploads/default.png'
-    return render_template('order.html', list=customer_cart_list, form=form, total_val=total_val)  # Pass the form to the template
+    return render_template('order.html', list=customer_cart_list, form=form, total_val=total_val, user_id=user_id) # Pass the form to the template
 
 @app.route('/HomePage')
 @app.route('/')
@@ -402,9 +332,8 @@ def order_placing(user_id):
         state = form.state.data
         pincode = form.pincode.data
         mode = form.mode.data
-        curr_date = date.today()
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
+        curr_date = datetime.today().strftime('%Y-%m-%d')
+        current_time = datetime.now().strftime("%H:%M:%S")
         delivery_boy_ids = [boy.Delivery_Boy_ID for boy in DeliveryBoy.query.all()]
         delivery_boy_id = random.choice(delivery_boy_ids) if delivery_boy_ids else None
         new_order = Order(
@@ -424,9 +353,8 @@ def order_placing(user_id):
         flash('Your Order has been placed Successfully!')
         url_direct = '/home/' + str(user_id)
         return redirect(url_direct)
-    else:
-        print(form.errors)  # Print form errors for debugging
     return render_template('orderDetails.html', total_val=total_val, form=form)
+
 
 @app.route('/customerRegister', methods=['GET', 'POST'])
 def customerRegister():
