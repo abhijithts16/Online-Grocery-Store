@@ -8,12 +8,12 @@ import random
 from datetime import datetime,date
 from functools import wraps
 from markupsafe import escape
-from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm
+from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm, PromoOfferForm, PromoCodeForm
 from werkzeug.utils import secure_filename
 
 cart_id=0
-total_val=0
-total_count=0
+total_val=0.0
+total_count=0.0
 customer_cart_list=[]
 
 UPLOAD_FOLDER = 'market/static/uploads' 
@@ -115,11 +115,11 @@ class Product(db.Model):
 
 class Cart(db.Model):
     __tablename__ = 'cart'
-    Cart_ID = db.Column(db.Integer, primary_key=True)
-    Total_Value = db.Column(db.Float)
-    Total_Count = db.Column(db.Integer)
-    Offer_ID = db.Column(db.Integer, db.ForeignKey('offer.Offer_ID'))
-    Final_Amount = db.Column(db.Float)
+    Cart_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Total_Value = db.Column(db.Float, nullable=False)
+    Total_Count = db.Column(db.Integer, nullable=False)
+    Offer_ID = db.Column(db.Integer, nullable=True)
+    Final_Amount = db.Column(db.Float, nullable=False)
 
 class AssociatedWith(db.Model):
     __tablename__ = 'associated_with'
@@ -160,12 +160,12 @@ def adminViewOrder(admin_id):
 @app.route('/adminOffer/<admin_id>', methods=['GET', 'POST'])
 @auth_required('admin')
 def adminAddOffer(admin_id):
-    if request.method == 'POST':
-        offerDetails = request.form
-        promo_code = offerDetails['Promo_Code']
-        percentage_discount = offerDetails['Percentage_Discount']
-        min_order_value = offerDetails['Min_OrderValue']
-        max_discount = offerDetails['Max_Discount']
+    form = PromoOfferForm()
+    if form.validate_on_submit():
+        promo_code = form.promo_code.data
+        percentage_discount = form.percentage_discount.data
+        min_order_value = form.min_order_value.data
+        max_discount = form.max_discount.data
         new_offer = Offer(
             promo_code=promo_code,
             percentage_discount=percentage_discount,
@@ -176,7 +176,8 @@ def adminAddOffer(admin_id):
         db.session.add(new_offer)
         db.session.commit()
         flash('You have successfully added an Offer!')
-    return render_template('addOffer.html', admin_id=admin_id)
+        return redirect(url_for('adminAddOffer', admin_id=admin_id))
+    return render_template('addOffer.html', admin_id=admin_id, form=form)
 
 @app.route('/adminDelivery_boy/<admin_id>', methods=['GET', 'POST'])
 @auth_required('admin')
@@ -285,8 +286,8 @@ def reinitialize():
     global total_val
     global customer_cart_list
     cart_id = StaticClass.giveCartId()
-    total_val=0
-    total_count=0
+    total_val=0.0
+    total_count=0.0
     customer_cart_list=[]
 
 @app.route('/home/<user_id>', methods=['GET', 'POST'])
@@ -307,20 +308,23 @@ def userEnter(user_id):
         new_cart = Cart(Cart_ID=cart_id, Total_Value=total_val, Total_Count=total_count, Offer_ID=3, Final_Amount=total_val)
         db.session.add(new_cart)
         db.session.commit()
+        print("hi")
         return redirect(url_for('placeOrder', user_id=user_id))
     else:
         purchaseDetails = request.args
-        try:
-            name = purchaseDetails['Name']
-            brand = purchaseDetails['Brand']
-            price = purchaseDetails['Price']
-            total_count += 1
-            total_val += int(price)
-            temp_dict = {'Name': name, 'Brand': brand, 'Price': price}
-            customer_cart_list.append(temp_dict)
-            flash('Product has been added successfully to the cart!')
-        except KeyError:
-            flash("Error: KeyError")
+        if 'Name' in purchaseDetails and 'Brand' in purchaseDetails and 'Price' in purchaseDetails:
+            try:
+                name = purchaseDetails['Name']
+                brand = purchaseDetails['Brand']
+                price = purchaseDetails['Price']
+                total_count += 1
+                total_val += float(price)
+                temp_dict = {'Name': name, 'Brand': brand, 'Price': price}
+                customer_cart_list.append(temp_dict)
+                flash('Product has been added successfully to the cart!')
+            except KeyError:
+                flash("Error: KeyError")
+
     return render_template('home.html', list=my_list)
 
 
@@ -328,9 +332,10 @@ def userEnter(user_id):
 @auth_required('customer')
 def placeOrder(user_id):
     global customer_cart_list, cart_id, total_val
-    if request.method == 'POST':
-        OfferDetails = request.form
-        p_code = OfferDetails['Promo_Code']
+    form = PromoCodeForm()  # Create an instance of the form
+    print(form.csrf_token.data)
+    if form.validate_on_submit():
+        p_code = form.promo_code.data
         offer = Offer.query.filter_by(promo_code=p_code).first()
         if not offer or p_code == 'Coupon_Code':
             new_cart_offer = Cart.query.filter_by(Cart_ID=cart_id).first()
@@ -352,7 +357,7 @@ def placeOrder(user_id):
                 db.session.add(new_association)
                 db.session.commit()
         return redirect(url_for('order_placing', user_id=user_id))
-    return render_template('order.html', list=customer_cart_list)
+    return render_template('order.html', list=customer_cart_list, form=form)  # Pass the form to the template
 
 @app.route('/HomePage')
 @app.route('/')

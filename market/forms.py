@@ -64,3 +64,14 @@ class AddProductForm(FlaskForm):
     unit = StringField('Unit', validators=[DataRequired(), Length(min=1, max=100)])
     image = FileField('Product Image', validators=[FileAllowed(['jpg', 'png'], 'Images only!'), FileRequired()])
     submit = SubmitField('Add Product')
+
+class PromoOfferForm(FlaskForm):
+    promo_code = StringField('Promo Code', validators=[DataRequired(), Length(min=2, max=20)])
+    percentage_discount = DecimalField('Percentage Discount', validators=[DataRequired(), NumberRange(min=0, max=100, message="Percentage must be between 0 and 100")])
+    min_order_value = DecimalField('Minimum Order Value', validators=[DataRequired(), NumberRange(min=0, message="Order value must be positive")])
+    max_discount = DecimalField('Maximum Discount', validators=[DataRequired(), NumberRange(min=0, message="Discount must be positive")])
+    submit = SubmitField('Add Offer')
+
+class PromoCodeForm(FlaskForm): 
+    promo_code = StringField('Promo Code', validators=[DataRequired()]) 
+    submit = SubmitField('Place Order')
