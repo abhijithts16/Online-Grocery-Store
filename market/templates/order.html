@@ -1,16 +1,18 @@
 {% extends 'base.html' %}
 
 {% block title %}
-  Welcome to onlineStore
+  Cart
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+  <h1 class="text-center">Cart</h1>  <!-- Added title -->
   <div class="row" style="margin-left: 20px;">
     {% for dict in list %}
     <div class="col-3">
       <div class="card" style="width: 15rem; margin: 5px;">
-        <img class="card-img-top" src="https://picsum.photos/100" alt="Card image cap" />
+        {% set image_path = url_for('static', filename=dict.Image) %}
+        <img class="card-img-top" src="{{ image_path }}" alt="Product Image" />
         <div class="card-body">
           <h5 class="card-title text-primary">Name: {{ dict.Name }}</h5>
           <h5 class="card-title text-success">Brand: {{ dict.Brand }}</h5>
@@ -19,6 +21,11 @@
       </div>
     </div>
     {% endfor %}
+  </div>
+  <div class="row">
+    <div class="col-12">
+      <h3 class="text-right">Total Amount: RS {{ total_val }}</h3> <!-- Display total amount -->
+    </div>
   </div>
 </div>
 {% endblock %}

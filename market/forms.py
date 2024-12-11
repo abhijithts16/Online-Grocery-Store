@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import DecimalField, IntegerField, StringField, PasswordField, SubmitField
+from wtforms import DecimalField, IntegerField, SelectField, StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired, Email, Length, EqualTo, ValidationError, Regexp, NumberRange
 import re
 from flask_wtf.file import FileField, FileRequired, FileAllowed
@@ -68,10 +68,18 @@ class AddProductForm(FlaskForm):
 class PromoOfferForm(FlaskForm):
     promo_code = StringField('Promo Code', validators=[DataRequired(), Length(min=2, max=20)])
     percentage_discount = DecimalField('Percentage Discount', validators=[DataRequired(), NumberRange(min=0, max=100, message="Percentage must be between 0 and 100")])
-    min_order_value = DecimalField('Minimum Order Value', validators=[DataRequired(), NumberRange(min=0, message="Order value must be positive")])
+    min_ordervalue = DecimalField('Minimum Order Value', validators=[DataRequired(), NumberRange(min=0, message="Order value must be positive")])
     max_discount = DecimalField('Maximum Discount', validators=[DataRequired(), NumberRange(min=0, message="Discount must be positive")])
     submit = SubmitField('Add Offer')
 
 class PromoCodeForm(FlaskForm): 
-    promo_code = StringField('Promo Code', validators=[DataRequired()]) 
+    promo_code = StringField('Promo Code', default='Coupon_Code', validators=[DataRequired()])
+    submit = SubmitField('Place Order')
+
+class OrderForm(FlaskForm): 
+    hno = StringField('House Number', validators=[DataRequired(), Length(min=1, max=100)]) 
+    city = StringField('City', validators=[DataRequired(), Length(min=2, max=100)]) 
+    state = StringField('State', validators=[DataRequired(), Length(min=2, max=100)]) 
+    pincode = StringField('Pincode', validators=[DataRequired(), Length(min=6, max=6), Regexp(r'^\d{6}$', message="Pincode must be exactly 6 digits.")]) 
+    mode = SelectField('Payment Mode', choices=[('Cash', 'Cash'), ('Card', 'Card'), ('UPI', 'UPI')], validators=[DataRequired()]) 
     submit = SubmitField('Place Order')

@@ -8,7 +8,7 @@ import random
 from datetime import datetime,date
 from functools import wraps
 from markupsafe import escape
-from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm, PromoOfferForm, PromoCodeForm
+from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, OrderForm, SellerRegistrationForm, LoginForm, PromoOfferForm, PromoCodeForm
 from werkzeug.utils import secure_filename
 
 cart_id=0
@@ -75,18 +75,25 @@ class Seller(db.Model):
 
 class Order(db.Model):
     __tablename__ = 'orders'
-    Order_ID = db.Column(db.Integer, primary_key=True)
-    mode = db.Column(db.String(50))
-    amount = db.Column(db.Float)
-    date = db.Column(db.Date)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customer.Customer_ID'))
+    order_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    mode = db.Column(db.String(10), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    city = db.Column(db.String(50), nullable=False)
+    state = db.Column(db.String(50), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    house_flat_no = db.Column(db.String(10), nullable=False)
+    pincode = db.Column(db.String(6), nullable=False)
+    cart_id = db.Column(db.Integer, db.ForeignKey('cart.Cart_ID'), nullable=False)
+    delivery_boy_id = db.Column(db.Integer, db.ForeignKey('delivery_boy.Delivery_Boy_ID'), nullable=True)
+    order_time = db.Column(db.Time, nullable=False)
+
 
 class Offer(db.Model):
     __tablename__ = 'offer'
     Offer_ID = db.Column(db.Integer, primary_key=True)
     promo_code = db.Column(db.String(50), unique=True)
     percentage_discount = db.Column(db.Float)
-    min_order_value = db.Column(db.Float)
+    min_ordervalue = db.Column(db.Float)
     max_discount = db.Column(db.Float)
     admin_id = db.Column(db.Integer, db.ForeignKey('admin.Admin_ID'))
 
@@ -164,12 +171,12 @@ def adminAddOffer(admin_id):
     if form.validate_on_submit():
         promo_code = form.promo_code.data
         percentage_discount = form.percentage_discount.data
-        min_order_value = form.min_order_value.data
+        min_ordervalue = form.min_ordervalue.data
         max_discount = form.max_discount.data
         new_offer = Offer(
             promo_code=promo_code,
             percentage_discount=percentage_discount,
-            min_order_value=min_order_value,
+            min_ordervalue=min_ordervalue,
             max_discount=max_discount,
             admin_id=admin_id
         )
@@ -308,7 +315,6 @@ def userEnter(user_id):
         new_cart = Cart(Cart_ID=cart_id, Total_Value=total_val, Total_Count=total_count, Offer_ID=3, Final_Amount=total_val)
         db.session.add(new_cart)
         db.session.commit()
-        print("hi")
         return redirect(url_for('placeOrder', user_id=user_id))
     else:
         purchaseDetails = request.args
@@ -333,7 +339,6 @@ def userEnter(user_id):
 def placeOrder(user_id):
     global customer_cart_list, cart_id, total_val
     form = PromoCodeForm()  # Create an instance of the form
-    print(form.csrf_token.data)
     if form.validate_on_submit():
         p_code = form.promo_code.data
         offer = Offer.query.filter_by(promo_code=p_code).first()
@@ -342,7 +347,7 @@ def placeOrder(user_id):
             new_cart_offer.Offer_ID = None
             db.session.commit()
         else:
-            if total_val > offer.min_order_value:
+            if total_val > offer.min_ordervalue:
                 dval = (total_val * offer.percentage_discount) / 100
                 deduct = min(dval, offer.max_discount)
                 total_val -= deduct
@@ -357,7 +362,17 @@ def placeOrder(user_id):
                 db.session.add(new_association)
                 db.session.commit()
         return redirect(url_for('order_placing', user_id=user_id))
-    return render_template('order.html', list=customer_cart_list, form=form)  # Pass the form to the template
+    for item in customer_cart_list:
+        product = Product.query.filter_by(name=item['Name']).first()
+        if product:
+            if product.image and product.image != 'None':
+                image_path = 'uploads/' + product.image
+            else:
+                image_path = 'uploads/default.png'
+            item['Image'] = image_path
+        else:
+            item['Image'] = 'uploads/default.png'
+    return render_template('order.html', list=customer_cart_list, form=form, total_val=total_val)  # Pass the form to the template
 
 @app.route('/HomePage')
 @app.route('/')
@@ -379,14 +394,14 @@ def loginRegisterAdmin():
 @app.route('/placeOrder/<user_id>', methods=['GET', 'POST'])
 @auth_required('customer')
 def order_placing(user_id):
-    global total_val
-    if request.method == 'POST':
-        orderDetails = request.form
-        hno = orderDetails['HNO']
-        city = orderDetails['City']
-        state = orderDetails['State']
-        pincode = orderDetails['Pincode']
-        mode = orderDetails['Mode']
+    global total_val, cart_id
+    form = OrderForm()
+    if form.validate_on_submit():
+        hno = form.hno.data
+        city = form.city.data
+        state = form.state.data
+        pincode = form.pincode.data
+        mode = form.mode.data
         curr_date = date.today()
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
@@ -407,7 +422,11 @@ def order_placing(user_id):
         db.session.add(new_order)
         db.session.commit()
         flash('Your Order has been placed Successfully!')
-    return render_template('orderDetails.html', total_val=total_val)
+        url_direct = '/home/' + str(user_id)
+        return redirect(url_direct)
+    else:
+        print(form.errors)  # Print form errors for debugging
+    return render_template('orderDetails.html', total_val=total_val, form=form)
 
 @app.route('/customerRegister', methods=['GET', 'POST'])
 def customerRegister():
