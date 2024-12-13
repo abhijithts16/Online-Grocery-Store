@@ -10,7 +10,7 @@ from functools import wraps
 from markupsafe import escape
 from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, DeliveryBoyForm, OrderForm, SellerProductForm, SellerRegistrationForm, LoginForm, PromoOfferForm, PromoCodeForm
 from werkzeug.utils import secure_filename
-from .models import Customer, Admin, Seller, Order, Offer, DeliveryBoy, Product, Cart, AssociatedWith, Sells
+from .models import AuditLog, Customer, Admin, Seller, Order, Offer, DeliveryBoy, Product, Cart, AssociatedWith, Sells
 
 cart_id=0
 total_val=0.0
@@ -54,6 +54,7 @@ def adminRedirect(admin_id):
 @app.route('/adminOrder/<admin_id>', methods=['GET', 'POST'])
 @auth_required('admin')
 def adminViewOrder(admin_id):
+    log_action(admin_id, 'Admin', 'Viewed Orders')
     my_list = []
     order_all = Order.query.all()
     for order in order_all:
@@ -87,6 +88,7 @@ def adminAddOffer(admin_id):
         db.session.add(new_offer)
         db.session.commit()
         flash('You have successfully added an Offer!')
+        log_action(admin_id, 'Admin', 'Added a new Offer with promo code ' + promo_code)
         return redirect(url_for('adminAddOffer', admin_id=admin_id))
     return render_template('addOffer.html', admin_id=admin_id, form=form)
 
@@ -112,6 +114,7 @@ def adminAdd_Delivery_Boy(admin_id):
         db.session.add(new_delivery_boy)
         db.session.commit()
         flash('You have successfully added a delivery boy!')
+        log_action(admin_id, 'Admin', 'Added a new delivery boy with email ' + email)
         return redirect(url_for('adminAdd_Delivery_Boy', admin_id=admin_id))
     return render_template('addDelivery.html', form=form, admin_id=admin_id)
 
@@ -139,6 +142,7 @@ def adminAdd_Seller(admin_id):
         db.session.add(new_seller)
         db.session.commit()
         flash('You have successfully added a seller!')
+        log_action(admin_id, 'Admin', 'Added a new seller with email ' + email)
         return redirect(url_for('adminAdd_Seller', admin_id=admin_id))
     return render_template('addSeller.html', admin_id=admin_id, form=form)
 
@@ -172,6 +176,7 @@ def adminAdd_Product(admin_id):
         db.session.add(new_product)
         db.session.commit()
         flash('You have successfully added a Product!', 'success')
+        log_action(admin_id, 'Admin', 'Added a new product with name ' + form.name.data)
         return redirect(url_for('adminAdd_Product', admin_id=admin_id))
     return render_template('addNewProducts.html', admin_id=admin_id, form=form)
 
@@ -191,6 +196,7 @@ def sell(seller_id):
             db.session.add(new_sale)
             db.session.commit()
             flash('Product added successfully')
+            log_action(seller_id, 'Seller', 'Added ' + str(form.quantity.data) + ' quantities for product ' + form.name.data)
         return redirect(url_for('sell', seller_id=seller_id))
     return render_template('addProduct.html', form=form)
 
@@ -235,6 +241,7 @@ def userEnter(user_id):
                 temp_dict = {'Name': name, 'Brand': brand, 'Price': price}
                 customer_cart_list.append(temp_dict)
                 flash('Product has been added successfully to the cart!')
+                log_action(user_id, 'Customer', 'added product' + name + ' to the cart')
             except KeyError:
                 flash("Error: KeyError")
 
@@ -262,6 +269,7 @@ def remove_from_cart(user_id, item_name):
         db.session.commit()
 
     flash(f'{item_name} has been removed from your cart.')
+    log_action(user_id, 'Customer', 'removed product' + item_name + ' from the cart')
     return redirect(url_for('placeOrder', user_id=user_id))
 
 @app.route('/order/<user_id>', methods=['GET', 'POST'])
@@ -351,6 +359,7 @@ def order_placing(user_id):
         db.session.add(new_order)
         db.session.commit()
         flash('Your Order has been placed Successfully!')
+        log_action(user_id, 'Customer', 'placed order with order ID ' + str(new_order.order_id))
         url_direct = '/home/' + str(user_id)
         return redirect(url_direct)
     return render_template('orderDetails.html', total_val=total_val, form=form)
@@ -379,6 +388,7 @@ def customerRegister():
         db.session.add(new_customer)
         db.session.commit()
         flash('You have registered successfully!')
+        log_action(new_customer.Customer_ID, 'Customer', 'New customer registered with Id ' + str(new_customer.Customer_ID))
         return redirect(url_for('UserLogin'))
     return render_template('customerRegister.html', form=form)
 
@@ -401,6 +411,7 @@ def adminRegister():
         db.session.add(new_admin)
         db.session.commit()
         flash('You have registered successfully!')
+        log_action(new_admin.Admin_ID, 'Admin', 'New admin registered with Id ' + str(new_admin.Admin_ID))
         return redirect(url_for('AdminLogin'))
     return render_template('adminRegister.html', form=form)
 
@@ -417,7 +428,7 @@ def sellerRegister():
         # Hash the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         # Select a random admin ID
-        rand_admin = db.session.execute('SELECT Admin_ID FROM admin').fetchall()
+        rand_admin = Admin.query.with_entities(Admin.Admin_ID).all() 
         admin_id = random.choice(rand_admin)[0] if rand_admin else None
         # Create a new seller
         new_seller = Seller(
@@ -433,6 +444,7 @@ def sellerRegister():
         db.session.add(new_seller)
         db.session.commit()
         flash('You have registered successfully!')
+        log_action(new_seller.Seller_ID, 'Seller', 'New seller registered with Id ' + str(new_seller.Seller_ID))
         return redirect(url_for('SellerLogin'))
     return render_template('sellerRegister.html', form=form)
 
@@ -450,9 +462,12 @@ def UserLogin():
             session.permanent = True
             reinitialize()
             url_direct = '/home/' + str(customer.Customer_ID)
+            flash('Login Successful')
+            log_action(customer.Customer_ID, 'Customer', 'Customer logged in with email ' + str(customer.email))
             return redirect(url_direct)
         else:
             flash('Invalid Email or Password')
+            log_action(customer.Customer_ID, 'Customer', 'Invalid login attempt with email ' + str(email))
     return render_template('UserLogin.html', form=form)
 
 from market.forms import CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm, AdminLoginForm
@@ -471,9 +486,12 @@ def AdminLogin():
             session['user_type'] = 'admin'
             session.permanent = True
             url_direct = '/admin/' + str(admin.Admin_ID)
+            flash('Login Successful')
+            log_action(admin.Admin_ID, 'Admin', 'Admin logged in with id ' + str(admin.Admin_ID))
             return redirect(url_direct)
         else:
             flash('Invalid Name or Password')
+            log_action(admin.Admin_ID, 'Admin', 'Invalid login attempt with id ' + str(admin.Admin_ID))
     return render_template('AdminLogin.html', form=form)
 
 @app.route('/SellerLogin', methods=['GET', 'POST'])
@@ -489,10 +507,27 @@ def SellerLogin():
             session['user_type'] = 'seller'
             session.permanent = True
             url_direct = '/sell/' + str(seller.Seller_ID)
+            flash('Login Successful')
+            log_action(seller.Seller_ID, 'Seller', 'Seller logged in with email ' + str(seller.email))
             return redirect(url_direct)
         else:
             flash('Invalid Email or Password')
+            log_action(seller.Seller_ID, 'Seller', 'Invalid login attempt with email ' + str(email))
     return render_template('SellerLogin.html', form=form)
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('500.html'), 500
+
+def log_action(user_id, user_type, action):
+    audit_log = AuditLog(user_id=user_id, user_type=user_type, action=action)
+    db.session.add(audit_log)
+    db.session.commit()
 
 class StaticClass:
     

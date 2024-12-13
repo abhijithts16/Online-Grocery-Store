@@ -1,3 +1,4 @@
+from datetime import datetime
 from . import db
 
 class Customer(db.Model):
@@ -94,3 +95,11 @@ class Sells(db.Model):
     Seller_ID = db.Column(db.Integer, db.ForeignKey('seller.Seller_ID'))
     Product_ID = db.Column(db.Integer, db.ForeignKey('product.Product_ID'))
     No_of_Product_Sold = db.Column(db.Integer)
+
+class AuditLog(db.Model):
+    __tablename__ = 'audit_log'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    user_type = db.Column(db.String(50), nullable=False)
+    action = db.Column(db.String(255), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
