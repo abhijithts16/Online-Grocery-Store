@@ -19,7 +19,7 @@
             <input type="hidden" name="Name" value="{{ dict.Name }}">
             <input type="hidden" name="Brand" value="{{ dict.Brand }}">
             <input type="hidden" name="Price" value="{{ dict.Price }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> <!-- CSRF token added here -->
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> 
             <button type="submit" class="btn btn-primary">Add to Cart</button>
           </form>
         </div>
@@ -31,7 +31,7 @@
 
 {% block navBar %}
 <form class="form-inline my-2 my-lg-0" method="POST" action="">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> <!-- CSRF token added here -->
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <button class="btn btn-outline-success my-2 my-sm-0 text-light bg-dark" type="submit">My Cart</button>
 </form>
 {% endblock %}

@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="container-fluid">
-  <h1 class="text-center">Cart</h1>  <!-- Added title -->
+  <h1 class="text-center">Cart</h1>
   <div class="row" style="margin-left: 20px;">
     {% for dict in list %}
     <div class="col-3">
@@ -18,7 +18,7 @@
           <h5 class="card-title text-success">Brand: {{ dict.Brand }}</h5>
           <h5 class="card-title text-danger">Price: RS {{ dict.Price }}</h5>
           <form method="POST" action="{{ url_for('remove_from_cart', user_id=user_id, item_name=dict.Name) }}">
-            {{ form.hidden_tag() }}  <!-- Ensure CSRF token is included here -->
+            {{ form.hidden_tag() }}
             <button type="submit" class="btn btn-danger">Remove</button>
           </form>
         </div>
@@ -28,7 +28,7 @@
   </div>
   <div class="row">
     <div class="col-12">
-      <h3 class="text-right">Total Amount: RS {{ total_val }}</h3> <!-- Display total amount -->
+      <h3 class="text-right">Total Amount: RS {{ total_val }}</h3>
     </div>
   </div>
 </div>
@@ -37,7 +37,7 @@
 {% block navBar %}
 <div style="margin: 5px;">
   <form class="form-inline my-2 my-lg-0" method="POST">
-    {{ form.hidden_tag() }}  <!-- This includes the CSRF token -->
+    {{ form.hidden_tag() }}
     {{ form.promo_code(class="form-control mr-sm-2", placeholder="Coupon_Code") }}
     {{ form.submit(class="btn btn-danger my-2 my-sm-0 text-light") }}
   </form>

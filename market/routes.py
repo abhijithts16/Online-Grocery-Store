@@ -1,11 +1,8 @@
-from http.client import HTTPResponse
 import os
-from xml.dom.expatbuilder import FragmentBuilder
 from flask import flash, redirect, render_template, request, url_for, session
-from pyparsing import nums
 from market import app, db, bcrypt
 import random
-from datetime import datetime,date
+from datetime import datetime
 from functools import wraps
 from markupsafe import escape
 from market.forms import AddProductForm, CustomerRegistrationForm, AdminRegistrationForm, DeliveryBoyForm, OrderForm, SellerProductForm, SellerRegistrationForm, LoginForm, PromoOfferForm, PromoCodeForm
@@ -25,17 +22,14 @@ def auth_required(role=None):
     def wrapper(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            # Check if the user is logged in
             if 'user_id' not in session:
                 flash('You need to log in first.')
                 return render_template('homepage.html')
 
-            # Check the user's role
             if role and session.get('user_type') != role:
                 flash('You do not have permission to access this page.')
                 return render_template('homepage.html')
 
-            # Check if the user_id in session matches any of the expected IDs in kwargs
             if ('user_id' in kwargs and session['user_id'] != int(kwargs['user_id'])) or \
                ('seller_id' in kwargs and session['user_id'] != int(kwargs['seller_id'])) or \
                ('admin_id' in kwargs and session['user_id'] != int(kwargs['admin_id'])):
@@ -74,10 +68,10 @@ def adminViewOrder(admin_id):
 def adminAddOffer(admin_id):
     form = PromoOfferForm()
     if form.validate_on_submit():
-        promo_code = form.promo_code.data
-        percentage_discount = form.percentage_discount.data
-        min_ordervalue = form.min_ordervalue.data
-        max_discount = form.max_discount.data
+        promo_code = escape(form.promo_code.data)
+        percentage_discount = escape(form.percentage_discount.data)
+        min_ordervalue = escape(form.min_ordervalue.data)
+        max_discount = escape(form.max_discount.data)
         new_offer = Offer(
             promo_code=promo_code,
             percentage_discount=percentage_discount,
@@ -97,10 +91,10 @@ def adminAddOffer(admin_id):
 def adminAdd_Delivery_Boy(admin_id):
     form = DeliveryBoyForm()
     if form.validate_on_submit():
-        first_name = form.first_name.data
-        last_name = form.last_name.data
-        mobile_no = form.mobile_no.data
-        email = form.email.data
+        first_name = escape(form.first_name.data)
+        last_name = escape(form.last_name.data)
+        mobile_no = escape(form.mobile_no.data)
+        email = escape(form.email.data)
         password = form.password.data
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_delivery_boy = DeliveryBoy(
@@ -123,12 +117,12 @@ def adminAdd_Delivery_Boy(admin_id):
 def adminAdd_Seller(admin_id):
     form = SellerRegistrationForm()
     if form.validate_on_submit():
-        first_name = form.first_name.data
-        last_name = form.last_name.data
-        email = form.email.data
-        phone_number = form.phone_number.data
+        first_name = escape(form.first_name.data)
+        last_name = escape(form.last_name.data)
+        email = escape(form.email.data)
+        phone_number = escape(form.phone_number.data)
         password = form.password.data
-        place_of_operation = form.place_of_operation.data
+        place_of_operation = escape(form.place_of_operation.data)
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_seller = Seller(
             first_name=first_name,
@@ -152,7 +146,6 @@ def adminAdd_Product(admin_id):
     form = AddProductForm()
     if form.validate_on_submit():
 
-        # Save the uploaded image 
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             os.makedirs(app.config['UPLOAD_FOLDER'])
         image_file = form.image.data 
@@ -160,23 +153,21 @@ def adminAdd_Product(admin_id):
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename) 
         image_file.save(image_path)
         
-        # Create a new product object
         new_product = Product(
-        name=form.name.data,
-        price=form.price.data,
-        brand=form.brand.data,
-        measurement=form.measurement.data,
-        category_id=form.category_id.data,
-        unit=form.unit.data,
-        admin_id=admin_id,
-        image=filename
+            name=escape(form.name.data),
+            price=escape(form.price.data),
+            brand=escape(form.brand.data),
+            measurement=escape(form.measurement.data),
+            category_id=escape(form.category_id.data),
+            unit=escape(form.unit.data),
+            admin_id=admin_id,
+            image=filename
         )
             
-        # Add to the session and commit to the database
         db.session.add(new_product)
         db.session.commit()
         flash('You have successfully added a Product!', 'success')
-        log_action(admin_id, 'Admin', 'Added a new product with name ' + form.name.data)
+        log_action(admin_id, 'Admin', 'Added a new product with name ' + escape(form.name.data))
         return redirect(url_for('adminAdd_Product', admin_id=admin_id))
     return render_template('addNewProducts.html', admin_id=admin_id, form=form)
 
@@ -185,18 +176,18 @@ def adminAdd_Product(admin_id):
 def sell(seller_id):
     form = SellerProductForm()
     if form.validate_on_submit():
-        name = form.name.data
-        brand = form.brand.data
-        quantity = form.quantity.data
+        name = escape(form.name.data)
+        brand = escape(form.brand.data)
+        quantity = escape(form.quantity.data)
         product = Product.query.filter_by(name=name, brand=brand).first()
-        if not product or quantity < 0:
+        if not product or int(quantity) < 0:
             flash('Invalid Product details or Quantity')
         else:
-            new_sale = Sells(Seller_ID=seller_id, Product_ID=product.Product_ID, No_of_Product_Sold=quantity)
+            new_sale = Sells(Seller_ID=seller_id, Product_ID=product.Product_ID, No_of_Product_Sold=int(quantity))
             db.session.add(new_sale)
             db.session.commit()
             flash('Product added successfully')
-            log_action(seller_id, 'Seller', 'Added ' + str(form.quantity.data) + ' quantities for product ' + form.name.data)
+            log_action(seller_id, 'Seller', 'Added ' + str(quantity) + ' quantities for product ' + name)
         return redirect(url_for('sell', seller_id=seller_id))
     return render_template('addProduct.html', form=form)
 
@@ -244,7 +235,6 @@ def userEnter(user_id):
                 log_action(user_id, 'Customer', 'added product' + name + ' to the cart')
             except KeyError:
                 flash("Error: KeyError")
-
     return render_template('home.html', list=my_list)
 
 
@@ -252,20 +242,16 @@ def userEnter(user_id):
 @auth_required('customer')
 def remove_from_cart(user_id, item_name):
     global customer_cart_list, total_val, cart_id
-
-    # Remove item from global cart list
     for item in customer_cart_list:
         if item['Name'] == item_name:
             total_val -= float(item['Price'])
             customer_cart_list.remove(item)
             break
-
-    # Update the cart in the database
     cart = Cart.query.filter_by(Cart_ID=cart_id).first()
     if cart:
         cart.Total_Value = total_val
         cart.Total_Count = len(customer_cart_list)
-        cart.Final_Amount = total_val  # Assuming Final_Amount equals Total_Value without discount
+        cart.Final_Amount = total_val
         db.session.commit()
 
     flash(f'{item_name} has been removed from your cart.')
@@ -278,7 +264,7 @@ def placeOrder(user_id):
     global customer_cart_list, cart_id, total_val
     form = PromoCodeForm()
     if form.validate_on_submit():
-        p_code = form.promo_code.data
+        p_code = escape(form.promo_code.data)
         offer = Offer.query.filter_by(promo_code=p_code).first()
         if not offer or p_code == 'Coupon_Code':
             new_cart_offer = Cart.query.filter_by(Cart_ID=cart_id).first()
@@ -294,14 +280,14 @@ def placeOrder(user_id):
                 new_cart_offer.Final_Amount = total_val
                 db.session.commit()
         for item in customer_cart_list:
-            product = Product.query.filter_by(name=item['Name']).first()
+            product = Product.query.filter_by(name=escape(item['Name'])).first()
             if product:
                 new_association = AssociatedWith(Customer_ID=user_id, Cart_ID=cart_id, Product_ID=product.Product_ID)
                 db.session.add(new_association)
                 db.session.commit()
         return redirect(url_for('order_placing', user_id=user_id))
     for item in customer_cart_list:
-        product = Product.query.filter_by(name=item['Name']).first()
+        product = Product.query.filter_by(name=escape(item['Name'])).first()
         if product:
             if product.image and product.image != 'None':
                 image_path = 'uploads/' + product.image
@@ -335,11 +321,11 @@ def order_placing(user_id):
     global total_val, cart_id
     form = OrderForm()
     if form.validate_on_submit():
-        hno = form.hno.data
-        city = form.city.data
-        state = form.state.data
-        pincode = form.pincode.data
-        mode = form.mode.data
+        hno = escape(form.hno.data)
+        city = escape(form.city.data)
+        state = escape(form.state.data)
+        pincode = escape(form.pincode.data)
+        mode = escape(form.mode.data)
         curr_date = datetime.today().strftime('%Y-%m-%d')
         current_time = datetime.now().strftime("%H:%M:%S")
         delivery_boy_ids = [boy.Delivery_Boy_ID for boy in DeliveryBoy.query.all()]
@@ -374,9 +360,7 @@ def customerRegister():
         email = escape(form.email.data)
         mobile_no = escape(form.mobile_no.data)
         password = form.password.data
-        # Hash the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        # Create a new customer
         new_customer = Customer(
             first_name=first_name,
             last_name=last_name,
@@ -384,7 +368,6 @@ def customerRegister():
             mobile_no=mobile_no,
             password=hashed_password
         )
-        # Add the new customer to the session and commit to the database
         db.session.add(new_customer)
         db.session.commit()
         flash('You have registered successfully!')
@@ -399,15 +382,12 @@ def adminRegister():
         first_name = escape(form.first_name.data)
         last_name = escape(form.last_name.data)
         password = form.password.data
-        # Hash the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        # Create a new admin
         new_admin = Admin(
             first_name=first_name,
             last_name=last_name,
             password=hashed_password
         )
-        # Add the new admin to the session and commit to the database
         db.session.add(new_admin)
         db.session.commit()
         flash('You have registered successfully!')
@@ -425,12 +405,9 @@ def sellerRegister():
         password = form.password.data
         phone_number = escape(form.phone_number.data)
         place_of_operation = escape(form.place_of_operation.data)
-        # Hash the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        # Select a random admin ID
         rand_admin = Admin.query.with_entities(Admin.Admin_ID).all() 
         admin_id = random.choice(rand_admin)[0] if rand_admin else None
-        # Create a new seller
         new_seller = Seller(
             first_name=first_name,
             last_name=last_name,
@@ -440,7 +417,6 @@ def sellerRegister():
             place_of_operation=place_of_operation,
             admin_id=admin_id
         )
-        # Add the new seller to the session and commit to the database
         db.session.add(new_seller)
         db.session.commit()
         flash('You have registered successfully!')
@@ -454,7 +430,6 @@ def UserLogin():
     if form.validate_on_submit():
         email = escape(form.email.data)
         password = form.password.data
-        # Fetch the user by email
         customer = Customer.query.filter_by(email=email).first()
         if customer and bcrypt.check_password_hash(customer.password, password):
             session['user_id'] = customer.Customer_ID
@@ -479,7 +454,6 @@ def AdminLogin():
         first_name = escape(form.first_name.data)
         last_name = escape(form.last_name.data)
         password = form.password.data
-        # Fetch the admin by name
         admin = Admin.query.filter_by(first_name=first_name, last_name=last_name).first()
         if admin and bcrypt.check_password_hash(admin.password, password):
             session['user_id'] = admin.Admin_ID
@@ -500,7 +474,6 @@ def SellerLogin():
     if form.validate_on_submit():
         email = escape(form.email.data)
         password = form.password.data
-        # Fetch the seller by email
         seller = Seller.query.filter_by(email=email).first()
         if seller and bcrypt.check_password_hash(seller.password, password):
             session['user_id'] = seller.Seller_ID
@@ -530,9 +503,7 @@ def log_action(user_id, user_type, action):
     db.session.commit()
 
 class StaticClass:
-    
     cart_id = random.randint(1000,100000)
-
     @staticmethod
     def giveCartId():
         StaticClass.cart_id +=1
