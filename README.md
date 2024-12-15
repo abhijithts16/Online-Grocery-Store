@@ -1,25 +1,62 @@
-# GroStop- An E-Commerce Grocery Store website using Flask
-We have incorporated the database in the form of an application
-where we have tried to resemble it into an E-commerce website which is in a running
-form where users,sellers, and Administrators can work as they want in a real-life
-Platform. We have made the Front end to enable the User Interface and User
-Experience to the best of our abilities. Here our users can actually interact with our
-website and do changes as they want to according to their scope in the project. It
-ranges from selling and buying for users to make changes for Administrators and for
-Sellers for selling their products. It also enables the site to work with all the necessary
-constraints to put up an actual E-commerce site. We have connected the Database to
-our actual website which maintains the recording accordingly, if we do any basic change
-some change happens in or database.
+# An E-Commerce Grocery Store website using Flask
+The E-Commerce Grocery Store Web Application is a dynamic online platform designed for managing an e-commerce store. It offers core functionalities such as product management, order processing, and secure user interactions. The application is built using Flask, MySQL, and various security best practices to ensure data privacy, integrity, and safe transactions. The main focus of this project is to deliver a user-friendly, secure online shopping experience by implementing strong security measures, such as authentication, authorization, and secure session management.
 
-## Tech-Stack Used
-- `Frontend` - HTML, CSS, BootStrap 5, Jinja Template.
-- `Backend` - Python, Flask, MySQL Database.
-- We have populated our database with real and good amount of data to test to the website properly. Data coherency has been taken utmost care of.
+## Technology Stack
+- **Frontend**: HTML, CSS, Bootstrap 5, Jinja Templates
+- **Backend**: Python (Flask)
+- **Database**: MySQL
+- **Security Libraries**: Flask-Bcrypt, Flask-WTF
+- **Testing Tools**: Bandit (Static Application Security Testing), Browser Developer Tools (for security verification)
 
-We chose `Flask` as our backend becuase we needed the website to be working as quickly as possible to allign with our
-project timeline. Also we chose `MySQL` as our database becuase we were working with it in our DBMS course in Undergrad.
+## Features and Security Objectives
 
-## Steps to deploy the website ❓
+### Major Features
+### 1. User Management
+- **User Registration**: Allows new users to sign up for the platform.
+- **Login and Authentication**: Enables users to log in securely.
+- **User Roles**: Supports distinct roles such as Admin, Seller, and Customer.
+### 2. Admin Functionalities
+- **View Orders**: Review and manage customer orders.
+- **Add Delivery Personnel**: Register new delivery boys to the system.
+- **Add New Offers**: Create and manage promotional codes.
+- **Add New Products**: Upload and manage product listings.
+- **Add New Sellers**: Onboard and manage sellers on the platform.
+### 3. Seller Functionalities
+- **Manage Product Inventory**: Add or update the quantity of existing products.
+### 4. Customer Functionalities
+- **Browse Products**: View available products with details.
+- **Cart Management**:
+  - Add items to the cart.
+  - Remove items from the cart.
+- **Order Placement**: Place orders for items added to the cart.
+
+### Security Objectives
+- **Authentication**: Secure user authentication with hashed passwords.
+- **Authorization**: Role-based access control to ensure users have appropriate permissions.
+- **Session Management**: Secure session handling with appropriate cookie attributes to prevent session hijacking.
+- **Data Validation and Sanitization**: Prevent SQL injection and XSS attacks by validating and sanitizing user input.
+- **Error Handling**: Graceful error handling with informative error messages.
+- **Auditing and Logging**:Track user actions and log important events for monitoring and debugging.
+- **Proper Security Configurations**:To protect against Clickjacking, CSRF and MIME Type Sniffing.
+
+## Project Structure
+**market/**: Contains the main application code.
+- **init.py**: Initializes the Flask application.
+- **routes.py**: Defines the routes and views for the application.
+- **models.py**: Defines the database models.
+- **forms.py**: Defines the forms used in the application.
+
+**static/**: Contains static files like CSS and uploads.
+
+**templates/**: Contains HTML templates for rendering views.
+
+**run.py**: Entry point to run the Flask application.
+
+**requirements.txt**: Lists the dependencies required for the project.
+
+**README.md**: Project documentation.
+
+## Setup and Installation Instructions -
 - First clone this repository
 - Then open the cloned folder
 - We now need to restore the database from the dump.
@@ -38,11 +75,9 @@ pip install -r .\requirements.txt
 ```
 - This completes the setup process to run the website. Just run using running the `run.py` file 😀
 
-# Demo of the website
-
-## Login Screen
+## Usage Guidelines
 Firstly when we open the website we are shown the login screen.
-- We are presented with three options
+We are presented with three options
  - Use as Admin
  - Use as Seller
  - Use as a Customer
@@ -98,105 +133,58 @@ Firstly when we open the website we are shown the login screen.
 
 ![image](https://user-images.githubusercontent.com/76804249/189935575-259c4d78-50a2-4d58-9f5f-adb282dd0a03.png)
 
+## Security Improvements
 
-# Complete Description of the Project
+The application implements the following key security improvements:
 
-## Scope of the Project
-Our Project deals with the making and managing of an online retail store. In this project
-our main objective is to make such a system which would help in the functioning of the
-online retail system amongst the stakeholders involved in such a system. Our scope of
-the project is mainly aiming to bridge the gap between people involved such as a
-seller,customer , the person administering it and the delivery boys. We would have
-different people to play different roles.
-Here the Admin,Customer and the Seller all would be able to login to a page.
-Specifically here we first take the Admin who would handle many requests and would
-ensure the proper working amongst people other than the organization being involved in
-the system. He would have all his details where he would have a name,ID,and a
-password. He would be able to add sellers giving products in the market and adding
-those products in the cart with their attributes. He would also be able to view the
-product. The Admin can also add a delivery boy to add products and also has the
-access to add offers for different orders as per their eligibility.
-Then similarly a seller having their name, place of operation,password,email and phone
-no would be able easily be able to sell the products.
-The product sold would also have various attributes where the admin and customer
-would be able to see it’s price,name, brand, measurement,unitand would also have an
-ID.
-Next we would have a customer who would have a name, password, email, mobile
-number and also an ID who would have the liberty to give the feedback on the product
-and is associated with the category and select the category. The customer now has the
-power to give a rating to the delivery boy correspondimng to a order..
-The Feedback would have a body to write the details as well as contain an ID to store it.
-It would contain the date to be added and also the score to measure it.
-We would have Categories containing the ID and the name to differentiate and the
-products would also be added to a cart having the total cost and the value added with
-it’s ID.
-Finally the cart makes the orders so that it can finally go for purchasing where the order
-would have it’s ID, the address it is being delivered to, the mode of payment and the
-amount to be given. It would have the order date and also it’s time. The cart would also
-have a final value as an attribute which is there after a offer is applied to it. Now offers
-can be applied in the cart as well.The orders section would laos be assigned to a
-particular delivery boy.
-We would have a offers section as well which is mainly used to apply special discounts
-to all the products that have been added in the product. The offer would contain a
-promo code, an offer id,a maximum discount, minimum value and also a percentage
-discount.
-Next at last we have a deliver boy who carries out different orders throughout the
-process. The delivery would have his password email id, phone number, as well as his
-average rating. He would have an ID and also a name with first and last name. He
-would be assigned to a order.
-So all in all a person would be able sell his products to the customer where the process
-would be managed by the admin and the order would be carried out by the delivery boy.
-It would have all the added features to make the process more efficient and smooth.
-We have also included Git for version control to ensure all members of the team have
-the latest version of the database with them. We regularly update dumps of database on
-Github.
-Our final scope lies in identifying the products,users,admin ,orders ,sellers and delivery
-boy and maintaining a proper cycle and interaction between all.
+1. **Authentication**: 
+   - Passwords are hashed using **Flask-Bcrypt** for secure storage.
 
-## Stake holders of the Project
-There are multiple Stakeholders in this project mainly the project is centered around
-customers and sellers along with it we also have admin and delivery boy as two more
-of our stakeholders. Customers are important stakeholders who perform operations like
-viewing products category wise, adding the products to cart, placing orders and giving
-feedback on products. They can also add rating to the delivery boy corresponding to a
-particular order.
-Our other stakeholder seller sells various products which customers buy.
-One other stakeholder here is the admin who maintains and adds data to our database
-for online retail store like adding products, adding sellers along with that he can view the
-orders customers have placed for processing them. The Admin also adds the delivery
-boy while the delivery boy always gets assigned to a order when it is made.
+2. **Authorization**:
+   - Role-based access control (RBAC) is used to ensure that users only have access to the appropriate resources.
 
-## Assumptions in the Project
-We have taken the following assumptions in our project.
-1. First of all we have assumed that all orders will go through the cart and every
-order will have a unique cart with unique cart ID and would be associated with
-only one single customer. Also every customer will have one cart at a time to
-place order.
-2. Only a customer can add product feedback to a product by giving review and
-rating to the products.
-3. Each product will belong to some unique category and there are no categories
-which don’t have any product.
-4. Customer can view product directly also and can view it by selecting that
-particular category also.
-5. There can be multiple admins and each of them has the power to add
-products,category and sellers.
-6. Only admins can view details of all the orders placed by different customers while
-a customer can view only his order
-7. Each product can be sold by any of the multiple sellers and each seller can sell
-multiple products
-8. Seller can only know no of products of each type they have sold
-9. We have also assumed each cart is associated with single order only and every
-order is associated with single cart only
-10. It is assumed in this project that all the products are sold at MRP and there is no
-option of discount or coupon code or cashback. ASSUMPTION REMOVED.
-11. We have made sure that offers are made according to a minimum price.It would
-have a maximum discount and would have a percentage discount.
-12. A cart can have a single offer only. But a single offer can be made to multiple
-carts.
-13.Only a single admin can add multiple offers.
-14.Only a single admin can add multiple delivery boys.
-15. A single delivery boy can be assigned to multiple orders
-16. Multiple customers can give a particular rating value to multiple deliver boys
-corresponding to multiple orders..
-17.A customer can add a rating corresponding to its own order only
+3. **Input Validation and Sanitization**:
+   - User input is validated and sanitized using **WTForms** and **markupsafe.escape**  to prevent attacks like SQL injection and XSS.
+
+4. **Session Management**:
+   - Session cookies are secured with **HttpOnly** and **Secure** flags to prevent unauthorized access.
+
+5. **Content Security**:
+   - A strong **Content Security Policy (CSP)** and other headers like **X-Frame-Options** and **X-XSS-Protection** are implemented to prevent clickjacking and XSS attacks.
+
+6. **CSRF Protection**:
+   - CSRF tokens are included in forms to protect against cross-site request forgery attacks.
+
+7. **Error Handling**:
+   - Custom error handlers were implemented to handle common HTTP errors gracefully.
+
+8. **Auditing and Logging**:
+   - User actions and application events are logged for monitoring and debugging purposes.
+
+9. **SQLAlchemy Database Interactions**:
+   - SQLAlchemy ORM is used to reduce the risk of SQL injection and simplify database interactions.
+
+## Testing Process
+
+### Functional Testing
+Functional testing was performed to ensure key security features are functioning correctly. Below is a summary of the key test cases executed:
+
+| Test Case                                 | Steps Performed                                             | Expected Result                                         | Actual Result                                           |
+|-------------------------------------------|-------------------------------------------------------------|---------------------------------------------------------|---------------------------------------------------------|
+| **Verify Unauthorized Access (Authentication)** | Attempt to access admin page without logging in.            | Should redirect to login page or show error.            | Unauthorized access blocked as expected.                |
+| **Verify Role-Based Access Control (Authorization)** | Attempt to access admin page as a regular user.             | Regular users should be denied access.                  | Access denied as expected.                              |
+| **Verify Input Validation and Sanitization** | Submit malicious payload (`' OR 1=1; --`) in registration form. | Input should be sanitized.                              | Input sanitized properly, no SQL injection.             |
+| **Verify Secure Session Handling**        | Inspect cookies using developer tools.                      | Cookies should have HttpOnly and Secure flags.           | HttpOnly and Secure flags correctly set.                |
+
+### Static Application Security Testing (SAST)
+Static Application Security Testing (SAST) was performed using **Bandit**, which scans Python code for common security vulnerabilities. The scan identified the following issues:
+- **Hardcoded Secret**: A medium-level risk from a hardcoded password (`app.secret_key`).
+- **Unsafe YAML loading**: High-confidence issue due to `yaml.load`, which could instantiate arbitrary objects.
+- **Insecure Randomness**: Use of `random.choice` and `random.randint` for cryptographic purposes.
+
+These issues have been addressed or noted for future improvement to ensure the application follows secure coding standards.
+
+## Contributions and References
+
+This project is built as part of a learning exercise and security enhancement. You can refer to the original repository here: [E-Commerce Grocery Store](https://github.com/vibhorag101/ECommerce-Grocery-Store).
                                                 

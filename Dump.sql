@@ -26,7 +26,7 @@ CREATE TABLE `admin` (
   `Admin_ID` int NOT NULL AUTO_INCREMENT,
   `First_Name` varchar(15) NOT NULL,
   `Last_Name` varchar(15) DEFAULT NULL,
-  `Admin_Password` varchar(20) NOT NULL,
+  `Admin_Password` varchar(255) NOT NULL,
   PRIMARY KEY (`Admin_ID`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -108,10 +108,10 @@ DROP TABLE IF EXISTS `cart`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `cart` (
   `Cart_ID` int NOT NULL AUTO_INCREMENT,
-  `Total_Value` int DEFAULT NULL,
+  `Total_Value` DOUBLE DEFAULT NULL,
   `Total_Count` int DEFAULT NULL,
   `Offer_ID` int DEFAULT NULL,
-  `Final_Amount` int NOT NULL,
+  `Final_Amount` DOUBLE NOT NULL,
   PRIMARY KEY (`Cart_ID`),
   KEY `cart_offer_Offer_ID_fk` (`Offer_ID`),
   KEY `totalcount` (`Total_Count`),
@@ -126,7 +126,7 @@ CREATE TABLE `cart` (
 
 LOCK TABLES `cart` WRITE;
 /*!40000 ALTER TABLE `cart` DISABLE KEYS */;
-INSERT INTO `cart` VALUES (1,230,3,1,130),(2,254,5,2,134),(3,954,10,NULL,954),(4,655,1,NULL,655),(5,285,2,2,165),(6,250,2,2,130),(7,620,2,3,372),(8,184,3,NULL,184),(9,335,1,NULL,335),(10,100,5,5,35);
+INSERT INTO `cart` VALUES (1,230.0,3,1,130.0),(2,254.0,5,2,134.0),(3,954.0,10,NULL,954.0),(4,655.0,1,NULL,655.0),(5,285.0,2,2,165.0),(6,250.0,2,2,130.0),(7,620.0,2,3,372.0),(8,184.0,3,NULL,184.0),(9,335.0,1,NULL,335.0),(10,100.0,5,5,35.0);
 /*!40000 ALTER TABLE `cart` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -167,7 +167,7 @@ CREATE TABLE `customer` (
   `Last_Name` varchar(15) DEFAULT NULL,
   `Email` varchar(35) NOT NULL,
   `Mobile_No` varchar(14) NOT NULL,
-  `Password` varchar(20) NOT NULL,
+  `Password` varchar(255) NOT NULL,
   PRIMARY KEY (`Customer_ID`),
   KEY `customerpassword` (`Password`)
 ) ENGINE=InnoDB AUTO_INCREMENT=231 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -196,7 +196,7 @@ CREATE TABLE `delivery_boy` (
   `Last_Name` varchar(15) DEFAULT NULL,
   `Mobile_No` varchar(10) NOT NULL,
   `Email` varchar(35) NOT NULL,
-  `Password` varchar(20) NOT NULL,
+  `Password` varchar(255) NOT NULL,
   `Average_Rating` decimal(3,2) DEFAULT NULL,
   `Admin_ID` int NOT NULL,
   PRIMARY KEY (`Delivery_Boy_ID`),
@@ -300,6 +300,7 @@ CREATE TABLE `product` (
   `Admin_ID` int DEFAULT NULL,
   `Category_ID` int DEFAULT NULL,
   `Unit` varchar(15) NOT NULL,
+  `image` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`Product_ID`),
   KEY `product_admin_Admin_ID_fk` (`Admin_ID`),
   KEY `product_category_Category ID_fk` (`Category_ID`),
@@ -315,9 +316,7 @@ CREATE TABLE `product` (
 
 LOCK TABLES `product` WRITE;
 /*!40000 ALTER TABLE `product` DISABLE KEYS */;
-INSERT INTO `product` VALUES (1,'Amul Taaza Toned Milk',25,'Amul','500',1,1,'ml'),(2,'Mother Dairy Cow Milk',26,'Mother Dairy','500',2,1,'ml'),(3,'Mother Dairy Full Cream Milk',30,'Mother Dairy','500',3,1,'ml'),(4,'Nestle Toned Milk',85,'Nestle','1000',1,1,'ml'),(5,'Amul Masti Spiced Buttermilk',12,'Amul','200',4,1,'ml'),(6,'Mother Dairy Mango Lassi',10,'Mother Dairy','80',2,1,'ml'),(7,'Mother Dairy Classic Curd',22,'Mother Dairy','200',3,1,'ml'),(8,'Amul Butter',100,'Amul','100',3,1,'g'),(9,'Britannia Cheese Slices',144,'Britannia','200',4,1,'g'),(10,'Amul Pure Ghee',520,'Amul','1000',3,1,'ml'),(11,'Harvest Gold Brown Bread',43,'Harvest Gold','400',2,2,'g'),(12,'English Oven Whole Wheat Bread',41,'English Oven','400',3,2,'g'),(13,'English Oven Pav',35,'English Oven','300',1,2,'g'),(14,'Britannia Whole Wheat Bread',45,'Britannia','450',2,2,'g'),(15,'Harvest Gold Burger Bun',35,'Harvest Gold','200',3,2,'g'),(16,'Mango',180,'Generic','1000',2,3,'g'),(17,'Apple',125,'Generic','500',4,3,'g'),(18,'Onion',25,'Generic','1000',1,3,'g'),(19,'Tomato',31,'Generic','500',3,3,'g'),(20,'Pineapple',100,'Generic','1000',3,3,'g'),(21,'Vaseline Intensive Care Lotion',335,'Vaseline','400',2,4,'ml'),(22,'Nivea Watermelon Shine Lip Balm',199,'Nivea','5',1,4,'g'),(23,'Nivea Creme',199,'Nivea','100',3,4,'ml'),(24,'Tresemme Keratin Smooth Shampoo',319,'Tresemme','340',3,4,'ml'),(25,'Parachute Coconut Oil',128,'Parachute','300',3,4,'ml'),(26,'Lays India\'s Magic Masala Chips',20,'Lays','52',2,5,'g'),(27,'Bingo Tedhe Medhe',20,'Bingo','90',4,5,'g'),(28,'Bingo Cream & Onion Chips ',20,'Lays','52',3,5,'g'),(29,'Lays Cream & Onion Chips',20,'Lays','52',1,5,'g'),(30,'Kurkure Masala Munch',20,'Kurkure','85',3,5,'g'),(31,'Act II Butter Microwave Popcorn',25,'Act II','33',3,6,'g'),(32,'Haldiram Bhujia',54,'Haldiram','200',2,6,'g'),(33,'Bingo Mad Angles Nachos',20,'Bingo','66',4,6,'g'),(34,'Haldiram All in One Namkeen',99,'Haldiram','400',3,6,'g'),(35,'Britannia Fruit Cake',30,'Britannia','115',4,6,'g'),(36,'Thumbs Up',40,'Thumbs Up','300',2,7,'ml'),(37,'Sprite',40,'Sprite','300',4,7,'ml'),(38,'Coco-Cola',40,'Coco-Cola','300',3,7,'ml'),(39,'Red Bull Energy Drink',115,'Red Bull','250',1,7,'ml'),(40,'Pepsi',33,'Pepsi','600',2,7,'ml'),(41,'Slice Mango Drink',95,'Slice','1750',2,8,'ml'),(42,'Tropicana Guava Delight Juice',105,'Tropicana','1000',4,8,'ml'),(43,'B Natural Apple Juice',120,'B Natural','1000',3,8,'ml'),(44,'Paper Boat Aam Panna',30,'Paper Boat','200',1,8,'ml'),(45,'Real Orange Juice',115,'Real','1000',2,8,'ml'),(46,'Real Canberry Juice',115,'Real','1000',4,8,'ml'),(47,'Tropicana Mixed Fruit Juice',40,'Tropicana','500',3,8,'ml'),(48,'Paper Boat Guava Juice',30,'Paper Boat','200',4,8,'ml'),(49,'Real Pomegranate Juice',125,'Real','1000',2,8,'ml'),(50,'B Natural Mixed Fruit Juice',120,'B Natural','1000',1,8,'ml'),(51,'Maggi Masala Instant Noodles',27,'Nestle','140',2,9,'g'),(52,'Knorr Manchow Soup',65,'Knorr','46',3,9,'g'),(53,'Maggi Masala Penne Pasta',28,'Nestle','65',1,9,'g'),(54,'Yippee Magic Masala Noodles',48,'Sunfeast','240',4,9,'g'),(55,'McCain Masala French Fries',125,'McCain','375',2,9,'g'),(56,'Britannia Good Day Butter Cookies',10,'Britannia','68',3,10,'g'),(57,'Parle-G Glucose Biscuit',25,'Parle','250',1,10,'g'),(58,'Britannia Nutri Choice Biscuit',25,'Britannia','100',4,10,'g'),(59,'Sunfeast Dark Fantasy Biscuit',150,'Sunfeast','300',2,10,'g'),(60,'Oreo Orignal Vanilla Biscuit',30,'Cadbury','120',3,10,'g'),(61,'Parle Elaichi Rusk',170,'Parle','1000',1,10,'g'),(62,'Unibic Choco Chip Cookies',120,'Unibic','500',4,10,'g'),(63,'Sunfeast Mom\'s Magic Biscuit',35,'Sunfeast','200',2,10,'g'),(64,'Unibic Cashew Cookies',140,'Unibic','500',3,10,'g'),(65,'Parle Krackjack Biscuit',35,'Parle','200',1,10,'g'),(66,'NIC Choco Chips Ice Cream',70,'NIC','100',4,11,'ml'),(67,'Amul Chocolate Brownie Ice Cream',215,'Amul','1000',2,11,'ml'),(68,'Kwality Walls Oreo & Cream',299,'Kwality Walls','700',3,11,'ml'),(69,'BR Cotton Candy Ice Cream',365,'Baskin Robbins','450',1,11,'ml'),(70,'NIC Alphonso Mango Ice Cream',70,'NIC','100',4,11,'ml'),(71,'Aashirvaad Atta',205,'ITC','5000',2,12,'g'),(72,'India Gate Dubar Basmati Rice',138,'India Gate','1000',3,12,'g'),(73,'Madhur Sugar',60,'Madhur','1000',1,12,'g'),(74,'Tata Salt',24,'Tata','1000',4,12,'g'),(75,'Fortune Soyabean Oil',215,'Fortune','1000',2,12,'ml'),(76,'Surf Excel Easy Wash Detergent',128,'HUL','1000',3,13,'g'),(77,'Surf Excel Matic Liquid Detergent',230,'HUL','1020',1,13,'ml'),(78,'Lizol Citrus Floor Cleaner',103,'Reckitt','500',4,13,'ml'),(79,'Harpic Toilet Cleaner',99,'Reckitt','500',2,13,'ml'),(80,'Vim Lemon Dishwash Gel',52,'Vim','250',3,13,'ml'),(81,'Kangaro Stapler',65,'Kangaro','1',1,14,'unit'),(82,'Fevi Stick',30,'Pidlite','1',4,14,'unit'),(83,'Rorito Maxtron Pen',50,'Rorito','1',2,14,'unit'),(84,'Fevicol',30,'Pidlite','1',3,14,'unit'),(85,'Cello Tape',20,'Generic','1',1,14,'unit'),(86,'Tata Sampann Raisins',103,'Tata','200',4,15,'g'),(87,'Tata Sampann Almonds',655,'Tata','500',2,15,'g'),(88,'Tata Sampann Pista',345,'Tata','200',3,15,'g'),(89,'Tata Sampann Cashew',585,'Tata','585',1,15,'g'),(90,'Happilo Dates',440,'Happilo','680',3,15,'g');
-/*!40000 ALTER TABLE `product` ENABLE KEYS */;
-UNLOCK TABLES;
+INSERT INTO `product` VALUES (1,'Amul Taaza Toned Milk',25,'Amul','500',1,1,'ml',NULL),(2,'Mother Dairy Cow Milk',26,'Mother Dairy','500',2,1,'ml',NULL),(3,'Mother Dairy Full Cream Milk',30,'Mother Dairy','500',3,1,'ml',NULL),(4,'Nestle Toned Milk',85,'Nestle','1000',1,1,'ml',NULL),(5,'Amul Masti Spiced Buttermilk',12,'Amul','200',4,1,'ml',NULL),(6,'Mother Dairy Mango Lassi',10,'Mother Dairy','80',2,1,'ml',NULL),(7,'Mother Dairy Classic Curd',22,'Mother Dairy','200',3,1,'ml',NULL),(8,'Amul Butter',100,'Amul','100',3,1,'g',NULL),(9,'Britannia Cheese Slices',144,'Britannia','200',4,1,'g',NULL),(10,'Amul Pure Ghee',520,'Amul','1000',3,1,'ml',NULL),(11,'Harvest Gold Brown Bread',43,'Harvest Gold','400',2,2,'g',NULL),(12,'English Oven Whole Wheat Bread',41,'English Oven','400',3,2,'g',NULL),(13,'English Oven Pav',35,'English Oven','300',1,2,'g',NULL),(14,'Britannia Whole Wheat Bread',45,'Britannia','450',2,2,'g',NULL),(15,'Harvest Gold Burger Bun',35,'Harvest Gold','200',3,2,'g',NULL),(16,'Mango',180,'Generic','1000',2,3,'g',NULL),(17,'Apple',125,'Generic','500',4,3,'g',NULL),(18,'Onion',25,'Generic','1000',1,3,'g',NULL),(19,'Tomato',31,'Generic','500',3,3,'g',NULL),(20,'Pineapple',100,'Generic','1000',3,3,'g',NULL),(21,'Vaseline Intensive Care Lotion',335,'Vaseline','400',2,4,'ml',NULL),(22,'Nivea Watermelon Shine Lip Balm',199,'Nivea','5',1,4,'g',NULL),(23,'Nivea Creme',199,'Nivea','100',3,4,'ml',NULL),(24,'Tresemme Keratin Smooth Shampoo',319,'Tresemme','340',3,4,'ml',NULL),(25,'Parachute Coconut Oil',128,'Parachute','300',3,4,'ml',NULL),(26,'Lays India\'s Magic Masala Chips',20,'Lays','52',2,5,'g',NULL),(27,'Bingo Tedhe Medhe',20,'Bingo','90',4,5,'g',NULL),(28,'Bingo Cream & Onion Chips ',20,'Lays','52',3,5,'g',NULL),(29,'Lays Cream & Onion Chips',20,'Lays','52',1,5,'g',NULL),(30,'Kurkure Masala Munch',20,'Kurkure','85',3,5,'g',NULL),(31,'Act II Butter Microwave Popcorn',25,'Act II','33',3,6,'g',NULL),(32,'Haldiram Bhujia',54,'Haldiram','200',2,6,'g',NULL),(33,'Bingo Mad Angles Nachos',20,'Bingo','66',4,6,'g',NULL),(34,'Haldiram All in One Namkeen',99,'Haldiram','400',3,6,'g',NULL),(35,'Britannia Fruit Cake',30,'Britannia','115',4,6,'g',NULL),(36,'Thumbs Up',40,'Thumbs Up','300',2,7,'ml',NULL),(37,'Sprite',40,'Sprite','300',4,7,'ml',NULL),(38,'Coco-Cola',
 
 --
 -- Table structure for table `product_feedback`
@@ -437,7 +436,7 @@ CREATE TABLE `seller` (
   `Last_Name` varchar(15) DEFAULT NULL,
   `Email` varchar(35) NOT NULL,
   `Phone_Number` varchar(15) NOT NULL,
-  `Password` varchar(30) NOT NULL,
+  `Password` varchar(255) NOT NULL,
   `Place_Of_Operation` varchar(30) DEFAULT NULL,
   `Admin_ID` int DEFAULT NULL,
   PRIMARY KEY (`Seller_ID`),
@@ -482,6 +481,31 @@ LOCK TABLES `sells` WRITE;
 /*!40000 ALTER TABLE `sells` DISABLE KEYS */;
 INSERT INTO `sells` VALUES (1,1,2),(1,3,1),(1,6,1),(1,8,2),(1,10,2),(3,11,1),(3,12,1),(1,16,1),(1,18,1),(1,20,1),(3,20,1),(6,21,1),(1,22,1),(1,26,1),(1,27,2),(1,28,2),(1,29,2),(1,30,1),(2,47,1),(2,49,1),(2,55,1),(2,65,1),(5,70,1),(2,73,1),(5,75,1),(2,79,1),(2,85,1),(4,87,1);
 /*!40000 ALTER TABLE `sells` ENABLE KEYS */;
+UNLOCK TABLES;
+
+DROP TABLE IF EXISTS `audit_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `audit_log` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `User_ID` int NOT NULL,
+  `User_Type` varchar(50) NOT NULL,
+  `Action` varchar(255) NOT NULL,
+  `Timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id_index` (`User_ID`),
+  CONSTRAINT `audit_log_user_id_fk` FOREIGN KEY (`User_ID`) REFERENCES `users` (`User_ID`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `audit_log`
+--
+
+LOCK TABLES `audit_log` WRITE;
+/*!40000 ALTER TABLE `audit_log` DISABLE KEYS */;
+INSERT INTO `audit_log` VALUES (1, 1, 'Customer', 'Logged in', '2024-12-15 08:00:00'), (2, 2, 'Admin', 'Added new product', '2024-12-15 09:00:00');
+/*!40000 ALTER TABLE `audit_log` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

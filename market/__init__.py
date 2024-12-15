@@ -35,3 +35,5 @@ def apply_security_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     return response
+
+from market import routes
