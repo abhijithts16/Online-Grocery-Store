@@ -186,7 +186,7 @@ def sell(seller_id):
             new_sale = Sells(Seller_ID=seller_id, Product_ID=product.Product_ID, No_of_Product_Sold=int(quantity))
             db.session.add(new_sale)
             db.session.commit()
-            flash('Product added successfully')
+            flash('Product stock added successfully')
             log_action(seller_id, 'Seller', 'Added ' + str(quantity) + ' quantities for product ' + name)
         return redirect(url_for('sell', seller_id=seller_id))
     return render_template('addProduct.html', form=form)
@@ -442,7 +442,7 @@ def UserLogin():
             return redirect(url_direct)
         else:
             flash('Invalid Email or Password')
-            log_action(customer.Customer_ID, 'Customer', 'Invalid login attempt with email ' + str(email))
+            log_action(0, 'Customer', 'Invalid login attempt with email ' + str(email))
     return render_template('UserLogin.html', form=form)
 
 from market.forms import CustomerRegistrationForm, AdminRegistrationForm, SellerRegistrationForm, LoginForm, AdminLoginForm
@@ -465,7 +465,7 @@ def AdminLogin():
             return redirect(url_direct)
         else:
             flash('Invalid Name or Password')
-            log_action(admin.Admin_ID, 'Admin', 'Invalid login attempt with id ' + str(admin.Admin_ID))
+            log_action(0, 'Admin', 'Invalid login attempt with name ' + str(first_name))
     return render_template('AdminLogin.html', form=form)
 
 @app.route('/SellerLogin', methods=['GET', 'POST'])
@@ -485,7 +485,7 @@ def SellerLogin():
             return redirect(url_direct)
         else:
             flash('Invalid Email or Password')
-            log_action(seller.Seller_ID, 'Seller', 'Invalid login attempt with email ' + str(email))
+            log_action(0, 'Seller', 'Invalid login attempt with email ' + str(email))
     return render_template('SellerLogin.html', form=form)
 
 @app.errorhandler(404)
